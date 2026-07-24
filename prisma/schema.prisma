@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activities {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  title       String    @db.VarChar(200)
+  description String?   @db.Text
+  cover_url   String?   @db.VarChar(500)
+  start_time  DateTime  @db.DateTime(0)
+  end_time    DateTime? @db.DateTime(0)
+  sort_order  Int       @default(0)
+  created_at  DateTime  @default(now()) @db.DateTime(0)
+  updated_at  DateTime  @default(now()) @db.DateTime(0)
+
+  @@index([start_time(sort: Desc)], map: "idx_start_time")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model admin_logs {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  admin_id    BigInt   @db.UnsignedBigInt
+  action      String   @db.VarChar(100)
+  target_type String?  @default("") @db.VarChar(50)
+  target_id   BigInt?  @db.UnsignedBigInt
+  detail      String?  @db.Text
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  users       users    @relation(fields: [admin_id], references: [id], onDelete: Cascade, map: "fk_adminlogs_admin")
+
+  @@index([action], map: "idx_action")
+  @@index([admin_id, created_at(sort: Desc)], map: "idx_admin_created")
+  @@index([target_type, target_id], map: "idx_target")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model avatars {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  url        String   @db.VarChar(500)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  users      users[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model awards {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  title       String    @db.VarChar(200)
+  description String?   @db.Text
+  image_url   String?   @db.VarChar(500)
+  award_date  DateTime? @db.Date
+  sort_order  Int       @default(0)
+  created_at  DateTime  @default(now()) @db.DateTime(0)
+  updated_at  DateTime  @default(now()) @db.DateTime(0)
+
+  @@index([award_date(sort: Desc)], map: "idx_award_date")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model banners {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  title      String   @default("") @db.VarChar(100)
+  image_url  String   @db.VarChar(500)
+  link_url   String?  @db.VarChar(500)
+  sort_order Int      @default(0)
+  is_visible Boolean  @default(true)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @db.DateTime(0)
+
+  @@index([is_visible, sort_order(sort: Desc)], map: "idx_visible_sort")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model check_ins {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt   @db.UnsignedBigInt
+  check_date DateTime @db.Date
+  created_at DateTime @default(now()) @db.DateTime(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_checkins_user")
+
+  @@unique([user_id, check_date], map: "uk_user_date")
+  @@index([user_id, created_at(sort: Desc)], map: "idx_user_created")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model gallery_images {
+  id         BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  category   gallery_images_category
+  url        String                  @db.VarChar(500)
+  title      String?                 @default("") @db.VarChar(100)
+  sort_order Int                     @default(0)
+  created_at DateTime                @default(now()) @db.DateTime(0)
+
+  @@index([category, sort_order(sort: Desc)], map: "idx_category_sort")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model graph_characters {
+  id                                                                  BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  name                                                                String            @db.VarChar(50)
+  avatar_url                                                          String?           @db.VarChar(500)
+  bio                                                                 String?           @db.Text
+  is_center                                                           Boolean           @default(false)
+  sort_order                                                          Int               @default(0)
+  created_at                                                          DateTime          @default(now()) @db.DateTime(0)
+  updated_at                                                          DateTime          @default(now()) @db.DateTime(0)
+  graph_relations_graph_relations_from_character_idTograph_characters graph_relations[] @relation("graph_relations_from_character_idTograph_characters")
+  graph_relations_graph_relations_to_character_idTograph_characters   graph_relations[] @relation("graph_relations_to_character_idTograph_characters")
+
+  @@index([is_center], map: "idx_center")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model graph_relations {
+  id                                                                   BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  from_character_id                                                    BigInt           @db.UnsignedBigInt
+  to_character_id                                                      BigInt           @db.UnsignedBigInt
+  relation_label                                                       String           @default("") @db.VarChar(100)
+  sort_order                                                           Int              @default(0)
+  created_at                                                           DateTime         @default(now()) @db.DateTime(0)
+  graph_characters_graph_relations_from_character_idTograph_characters graph_characters @relation("graph_relations_from_character_idTograph_characters", fields: [from_character_id], references: [id], onDelete: Cascade, map: "fk_relations_from")
+  graph_characters_graph_relations_to_character_idTograph_characters   graph_characters @relation("graph_relations_to_character_idTograph_characters", fields: [to_character_id], references: [id], onDelete: Cascade, map: "fk_relations_to")
+
+  @@index([from_character_id], map: "idx_from")
+  @@index([to_character_id], map: "idx_to")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model likes {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt   @db.UnsignedBigInt
+  message_id BigInt   @db.UnsignedBigInt
+  created_at DateTime @default(now()) @db.DateTime(0)
+  messages   messages @relation(fields: [message_id], references: [id], onDelete: Cascade, map: "fk_likes_message")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_likes_user")
+
+  @@unique([user_id, message_id], map: "uk_user_message")
+  @@index([message_id], map: "idx_message")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model messages {
+  id              BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  sender_id       BigInt            @db.UnsignedBigInt
+  content         String            @db.VarChar(500)
+  type            messages_type     @default(public)
+  like_count      Int               @default(0) @db.UnsignedInt
+  created_at      DateTime          @default(now()) @db.DateTime(0)
+  updated_at      DateTime          @default(now()) @db.DateTime(0)
+  likes           likes[]
+  users           users             @relation(fields: [sender_id], references: [id], onDelete: Cascade, map: "fk_messages_sender")
+  private_replies private_replies[]
+  reports         reports[]
+
+  @@index([sender_id], map: "idx_sender")
+  @@index([type, created_at(sort: Desc)], map: "idx_type_created")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model private_replies {
+  id                                          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  message_id                                  BigInt   @db.UnsignedBigInt
+  streamer_id                                 BigInt   @db.UnsignedBigInt
+  target_user_id                              BigInt   @db.UnsignedBigInt
+  content                                     String   @db.VarChar(500)
+  created_at                                  DateTime @default(now()) @db.DateTime(0)
+  updated_at                                  DateTime @default(now()) @db.DateTime(0)
+  messages                                    messages @relation(fields: [message_id], references: [id], onDelete: Cascade, map: "fk_replies_message")
+  users_private_replies_streamer_idTousers    users    @relation("private_replies_streamer_idTousers", fields: [streamer_id], references: [id], onDelete: Cascade, map: "fk_replies_streamer")
+  users_private_replies_target_user_idTousers users    @relation("private_replies_target_user_idTousers", fields: [target_user_id], references: [id], onDelete: Cascade, map: "fk_replies_target")
+
+  @@index([message_id], map: "idx_message")
+  @@index([streamer_id], map: "idx_streamer")
+  @@index([target_user_id, created_at(sort: Desc)], map: "idx_target_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model reports {
+  id          BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  reporter_id BigInt         @db.UnsignedBigInt
+  message_id  BigInt         @db.UnsignedBigInt
+  reason      String?        @default("") @db.VarChar(500)
+  status      reports_status @default(pending)
+  resolved_at DateTime?      @db.DateTime(0)
+  created_at  DateTime       @default(now()) @db.DateTime(0)
+  messages    messages       @relation(fields: [message_id], references: [id], onDelete: Cascade, map: "fk_reports_message")
+  users       users          @relation(fields: [reporter_id], references: [id], onDelete: Cascade, map: "fk_reports_reporter")
+
+  @@index([message_id], map: "idx_message")
+  @@index([reporter_id], map: "idx_reporter")
+  @@index([status, created_at(sort: Desc)], map: "idx_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sensitive_words {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  word       String   @unique(map: "uk_word") @db.VarChar(100)
+  created_at DateTime @default(now()) @db.DateTime(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model songs {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  title      String   @db.VarChar(200)
+  artist     String?  @default("") @db.VarChar(100)
+  audio_url  String   @db.VarChar(500)
+  cover_url  String?  @db.VarChar(500)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  @@index([sort_order(sort: Desc)], map: "idx_sort")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model streamer_info {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String   @default("") @db.VarChar(50)
+  avatar_url String   @default("") @db.VarChar(500)
+  tags       String?  @default("") @db.VarChar(500)
+  bio        String?  @db.Text
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @db.DateTime(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                                                    BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  username                                              String            @unique(map: "uk_username") @db.VarChar(50)
+  password_hash                                         String            @db.VarChar(255)
+  nickname                                              String            @default("") @db.VarChar(30)
+  avatar_id                                             BigInt?           @db.UnsignedBigInt
+  role                                                  users_role        @default(fan)
+  status                                                users_status      @default(active)
+  created_at                                            DateTime          @default(now()) @db.DateTime(0)
+  updated_at                                            DateTime          @default(now()) @db.DateTime(0)
+  admin_logs                                            admin_logs[]
+  check_ins                                             check_ins[]
+  likes                                                 likes[]
+  messages                                              messages[]
+  private_replies_private_replies_streamer_idTousers    private_replies[] @relation("private_replies_streamer_idTousers")
+  private_replies_private_replies_target_user_idTousers private_replies[] @relation("private_replies_target_user_idTousers")
+  reports                                               reports[]
+  avatars                                               avatars?          @relation(fields: [avatar_id], references: [id], map: "fk_users_avatar")
+
+  @@index([avatar_id], map: "fk_users_avatar")
+  @@index([role], map: "idx_role")
+  @@index([status], map: "idx_status")
+}
+
+enum gallery_images_category {
+  二次元 @map("二次元")
+  三次元 @map("三次元")
+}
+
+enum messages_type {
+  public
+  private
+}
+
+enum reports_status {
+  pending
+  resolved
+}
+
+enum users_role {
+  fan
+  admin
+  streamer
+}
+
+enum users_status {
+  active
+  banned
+}

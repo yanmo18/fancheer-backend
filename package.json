@@ -1,0 +1,48 @@
+{
+  "name": "fancheer-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec tsx src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "prisma:gen": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.2",
+  "devDependencies": {
+    "@prisma/adapter-mariadb": "^7.9.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.1.1",
+    "dotenv-cli": "^11.0.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.9.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.9.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dayjs": "^1.11.21",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ioredis": "^5.11.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "sharp": "^0.35.3",
+    "svg-captcha": "^1.4.0",
+    "xss": "^1.0.15"
+  }
+}
