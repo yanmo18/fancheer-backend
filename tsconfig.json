@@ -3,13 +3,19 @@
     "target": "ES2020",
     "module": "CommonJS",
     "outDir": "./dist",
-    "rootDir": "./src",
+    // 配置根目录，包含src和generated/prisma目录
+    "rootDirs": ["./src", "./generated/prisma"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    // 配置路径别名
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  // 配置包含的文件，包含src和generated/prisma目录下的所有文件
+  "include": ["src/**/*", "generated/prisma/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
