@@ -64,17 +64,19 @@ export const updateUserStatus = async (id: number, status: string) => {
   if (status === 'banned') {
     await prisma.admin_logs.create({
       data: {
+        admin_id: 1,
         action: 'ban_user',
         target_id: id,
-        description: `封禁用户: ${user.username}`
+        detail: `封禁用户: ${user.username}`
       }
     })
   } else {
     await prisma.admin_logs.create({
       data: {
+        admin_id: 1,
         action: 'unban_user',
         target_id: id,
-        description: `解封用户: ${user.username}`
+        detail: `解封用户: ${user.username}`
       }
     })
   }

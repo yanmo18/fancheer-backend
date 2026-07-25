@@ -253,8 +253,8 @@ model users {
 }
 
 enum gallery_images_category {
-  二次元 @map("二次元")
-  三次元 @map("三次元")
+  anime @map("二次元")
+  real @map("三次元")
 }
 
 enum messages_type {

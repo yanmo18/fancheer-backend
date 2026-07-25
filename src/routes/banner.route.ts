@@ -18,7 +18,7 @@ import { getBanners, getAdminBanners, createBanner, updateBanner, deleteBanner }
 
 const router = Router()
 
-router.get('/', getBanners)
+router.get('/banners', getBanners)
 router.get('/admin/banners', authMiddleware, requireRole(['admin', 'streamer']), getAdminBanners)
 router.post('/admin/banners', authMiddleware, requireRole(['admin', 'streamer']), createBanner)
 router.put('/admin/banners/:id', authMiddleware, requireRole(['admin', 'streamer']), updateBanner)

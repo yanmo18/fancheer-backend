@@ -6,8 +6,9 @@
  */
 
 import { prisma } from '../lib/prisma'
-import { redis } from '../config/redis'
+import redis from '../config/redis'
 import { signToken } from '../config/jwt'
+import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import svgCaptcha from 'svg-captcha'
 import crypto from 'crypto'

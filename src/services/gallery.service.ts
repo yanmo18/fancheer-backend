@@ -19,7 +19,7 @@ export const getGallery = async (category?: string) => {
     orderBy: { sort_order: 'desc' },
     select: {
       id: true,
-      image_url: true,
+      url: true,
       category: true,
       sort_order: true
     }
@@ -27,7 +27,7 @@ export const getGallery = async (category?: string) => {
 
   return images.map(img => ({
     ...img,
-    imageUrl: img.image_url,
+    imageUrl: img.url,
     sortOrder: img.sort_order
   }))
 }
@@ -46,10 +46,9 @@ export const getAdminGallery = async (page: number, pageSize: number) => {
   return {
     list: list.map(img => ({
       ...img,
-      imageUrl: img.image_url,
+      imageUrl: img.url,
       sortOrder: img.sort_order,
-      createdAt: img.created_at,
-      updatedAt: img.updated_at
+      createdAt: img.created_at
     })),
     pagination: {
       page,
@@ -67,7 +66,7 @@ export const createGalleryImage = async ({ imageUrl, category, sortOrder }: {
 }) => {
   const image = await prisma.gallery_images.create({
     data: {
-      image_url: imageUrl,
+      url: imageUrl,
       category,
       sort_order: sortOrder || 0
     },
@@ -88,10 +87,9 @@ export const updateGalleryImage = async (id: number, { imageUrl, category, sortO
   }
 
   const updateData: Record<string, any> = {}
-  if (imageUrl !== undefined) updateData.image_url = imageUrl
+  if (imageUrl !== undefined) updateData.url = imageUrl
   if (category !== undefined) updateData.category = category
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
-  updateData.updated_at = new Date()
 
   await prisma.gallery_images.update({
     where: { id },

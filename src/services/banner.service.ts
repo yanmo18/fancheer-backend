@@ -79,9 +79,10 @@ export const createBanner = async ({ title, imageUrl, linkUrl, sortOrder, isVisi
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'create_banner',
       target_id: banner.id,
-      description: `创建Banner: ${title || '无标题'}`
+      detail: `创建Banner: ${title || '无标题'}`
     }
   })
 
@@ -115,9 +116,10 @@ export const updateBanner = async (id: number, { title, imageUrl, linkUrl, sortO
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'update_banner',
       target_id: id,
-      description: `更新Banner: ${id}`
+      detail: `更新Banner: ${id}`
     }
   })
 }
@@ -132,9 +134,10 @@ export const deleteBanner = async (id: number) => {
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'delete_banner',
       target_id: id,
-      description: `删除Banner: ${banner.title || '无标题'}`
+      detail: `删除Banner: ${banner.title || '无标题'}`
     }
   })
 }

@@ -26,18 +26,18 @@ export const getAdminCharacters = async (req: Request, res: Response) => {
 }
 
 export const createCharacter = async (req: Request, res: Response) => {
-  const { name, avatarUrl, description, x, y } = req.body
+  const { name, avatarUrl, bio, isCenter, sortOrder } = req.body
 
   if (!name) return res.json(fail('人物名称不能为空', 400))
 
-  const result = await graphService.createCharacter({ name, avatarUrl, description, x, y })
+  const result = await graphService.createCharacter({ name, avatarUrl, bio, isCenter, sortOrder })
   return res.json(success(result, '人物创建成功'))
 }
 
 export const updateCharacter = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, avatarUrl, description, x, y } = req.body
-  await graphService.updateCharacter(Number(id), { name, avatarUrl, description, x, y })
+  const { name, avatarUrl, bio, isCenter, sortOrder } = req.body
+  await graphService.updateCharacter(Number(id), { name, avatarUrl, bio, isCenter, sortOrder })
   return res.json(success(null, '人物更新成功'))
 }
 

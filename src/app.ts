@@ -40,10 +40,33 @@ app.get('/', (req, res) => {
   })
 })
 
-// TODO: 后续在此挂载所有业务路由
-// app.use('/api/auth', authRoutes)
-// app.use('/api/user', userRoutes)
-// app.use('/api/admin', adminRoutes)
+import authRoutes from './routes/auth.route'
+import userRoutes from './routes/user.route'
+import bannerRoutes from './routes/banner.route'
+import streamerRoutes from './routes/streamer.route'
+import awardsRoutes from './routes/awards.route'
+import chatRoutes from './routes/chat.route'
+import checkinRoutes from './routes/checkin.route'
+import galleryRoutes from './routes/gallery.route'
+import songsRoutes from './routes/songs.route'
+import activitiesRoutes from './routes/activities.route'
+import graphRoutes from './routes/graph.route'
+import reportsRoutes from './routes/reports.route'
+import adminRoutes from './routes/admin.route'
+
+app.use('/api/auth', authRoutes)
+app.use('/api/user', userRoutes)
+app.use('/api', bannerRoutes)
+app.use('/api', streamerRoutes)
+app.use('/api', awardsRoutes)
+app.use('/api/chat', chatRoutes)
+app.use('/api/checkin', checkinRoutes)
+app.use('/api', galleryRoutes)
+app.use('/api', songsRoutes)
+app.use('/api', activitiesRoutes)
+app.use('/api', graphRoutes)
+app.use('/api', reportsRoutes)
+app.use('/api', adminRoutes)
 
 app.use(errorHandler)
 

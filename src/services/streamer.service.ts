@@ -76,9 +76,10 @@ export const updateStreamerInfo = async ({ name, avatarUrl, tags, bio }: {
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'update_streamer_info',
       target_id: existing?.id || 1,
-      description: '更新主播资料'
+      detail: '更新主播资料'
     }
   })
 }

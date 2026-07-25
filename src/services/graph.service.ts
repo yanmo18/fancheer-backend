@@ -14,15 +14,18 @@ export const getCharacters = async () => {
       id: true,
       name: true,
       avatar_url: true,
-      description: true,
-      x: true,
-      y: true
+      bio: true,
+      is_center: true,
+      sort_order: true
     }
   })
 
   return characters.map(char => ({
     ...char,
-    avatarUrl: char.avatar_url
+    avatarUrl: char.avatar_url,
+    bio: char.bio,
+    isCenter: char.is_center,
+    sortOrder: char.sort_order
   }))
 }
 
@@ -32,7 +35,8 @@ export const getRelations = async () => {
       id: true,
       from_character_id: true,
       to_character_id: true,
-      relation_type: true
+      relation_label: true,
+      sort_order: true
     }
   })
 
@@ -40,7 +44,8 @@ export const getRelations = async () => {
     ...rel,
     fromCharacterId: rel.from_character_id,
     toCharacterId: rel.to_character_id,
-    relationType: rel.relation_type
+    relationLabel: rel.relation_label,
+    sortOrder: rel.sort_order
   }))
 }
 
@@ -58,8 +63,9 @@ export const getAdminCharacters = async (page: number, pageSize: number) => {
     list: list.map(char => ({
       ...char,
       avatarUrl: char.avatar_url,
-      createdAt: char.created_at,
-      updatedAt: char.updated_at
+      isCenter: char.is_center,
+      sortOrder: char.sort_order,
+      createdAt: char.created_at
     })),
     pagination: {
       page,
@@ -70,20 +76,20 @@ export const getAdminCharacters = async (page: number, pageSize: number) => {
   }
 }
 
-export const createCharacter = async ({ name, avatarUrl, description, x, y }: {
+export const createCharacter = async ({ name, avatarUrl, bio, isCenter, sortOrder }: {
   name: string
   avatarUrl?: string
-  description?: string
-  x?: number
-  y?: number
+  bio?: string
+  isCenter?: boolean
+  sortOrder?: number
 }) => {
   const character = await prisma.graph_characters.create({
     data: {
       name,
       avatar_url: avatarUrl || '',
-      description: description || '',
-      x: x || 0,
-      y: y || 0
+      bio: bio || '',
+      is_center: isCenter !== undefined ? isCenter : false,
+      sort_order: sortOrder || 0
     },
     select: { id: true }
   })
@@ -91,12 +97,12 @@ export const createCharacter = async ({ name, avatarUrl, description, x, y }: {
   return { id: character.id }
 }
 
-export const updateCharacter = async (id: number, { name, avatarUrl, description, x, y }: {
+export const updateCharacter = async (id: number, { name, avatarUrl, bio, isCenter, sortOrder }: {
   name?: string
   avatarUrl?: string
-  description?: string
-  x?: number
-  y?: number
+  bio?: string
+  isCenter?: boolean
+  sortOrder?: number
 }) => {
   const character = await prisma.graph_characters.findUnique({ where: { id } })
   if (!character) {
@@ -106,10 +112,9 @@ export const updateCharacter = async (id: number, { name, avatarUrl, description
   const updateData: Record<string, any> = {}
   if (name !== undefined) updateData.name = name
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl
-  if (description !== undefined) updateData.description = description
-  if (x !== undefined) updateData.x = x
-  if (y !== undefined) updateData.y = y
-  updateData.updated_at = new Date()
+  if (bio !== undefined) updateData.bio = bio
+  if (isCenter !== undefined) updateData.is_center = isCenter
+  if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
   await prisma.graph_characters.update({
     where: { id },
@@ -150,9 +155,9 @@ export const getAdminRelations = async (page: number, pageSize: number) => {
       ...rel,
       fromCharacterId: rel.from_character_id,
       toCharacterId: rel.to_character_id,
-      relationType: rel.relation_type,
-      createdAt: rel.created_at,
-      updatedAt: rel.updated_at
+      relationLabel: rel.relation_label,
+      sortOrder: rel.sort_order,
+      createdAt: rel.created_at
     })),
     pagination: {
       page,
@@ -163,10 +168,11 @@ export const getAdminRelations = async (page: number, pageSize: number) => {
   }
 }
 
-export const createRelation = async ({ fromCharacterId, toCharacterId, relationType }: {
+export const createRelation = async ({ fromCharacterId, toCharacterId, relationLabel, sortOrder }: {
   fromCharacterId: number
   toCharacterId: number
-  relationType: string
+  relationLabel?: string
+  sortOrder?: number
 }) => {
   const fromChar = await prisma.graph_characters.findUnique({ where: { id: fromCharacterId } })
   const toChar = await prisma.graph_characters.findUnique({ where: { id: toCharacterId } })
@@ -178,7 +184,8 @@ export const createRelation = async ({ fromCharacterId, toCharacterId, relationT
     data: {
       from_character_id: fromCharacterId,
       to_character_id: toCharacterId,
-      relation_type: relationType
+      relation_label: relationLabel || '',
+      sort_order: sortOrder || 0
     },
     select: { id: true }
   })
@@ -186,10 +193,11 @@ export const createRelation = async ({ fromCharacterId, toCharacterId, relationT
   return { id: relation.id }
 }
 
-export const updateRelation = async (id: number, { fromCharacterId, toCharacterId, relationType }: {
+export const updateRelation = async (id: number, { fromCharacterId, toCharacterId, relationLabel, sortOrder }: {
   fromCharacterId?: number
   toCharacterId?: number
-  relationType?: string
+  relationLabel?: string
+  sortOrder?: number
 }) => {
   const relation = await prisma.graph_relations.findUnique({ where: { id } })
   if (!relation) {
@@ -199,8 +207,8 @@ export const updateRelation = async (id: number, { fromCharacterId, toCharacterI
   const updateData: Record<string, any> = {}
   if (fromCharacterId !== undefined) updateData.from_character_id = fromCharacterId
   if (toCharacterId !== undefined) updateData.to_character_id = toCharacterId
-  if (relationType !== undefined) updateData.relation_type = relationType
-  updateData.updated_at = new Date()
+  if (relationLabel !== undefined) updateData.relation_label = relationLabel
+  if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
   await prisma.graph_relations.update({
     where: { id },

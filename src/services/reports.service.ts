@@ -16,7 +16,7 @@ export const createReport = async (userId: number, messageId: number, reason: st
 
   const existingReport = await prisma.reports.findFirst({
     where: {
-      user_id: userId,
+      reporter_id: userId,
       message_id: messageId,
       status: 'pending'
     }
@@ -28,7 +28,7 @@ export const createReport = async (userId: number, messageId: number, reason: st
 
   const report = await prisma.reports.create({
     data: {
-      user_id: userId,
+      reporter_id: userId,
       message_id: messageId,
       reason,
       status: 'pending'
@@ -66,13 +66,12 @@ export const getReports = async (page: number, pageSize: number, status?: string
       id: report.id,
       messageId: report.message_id,
       messageContent: report.messages?.content || '',
-      reporterId: report.user_id,
+      reporterId: report.reporter_id,
       reporterNickname: report.users?.nickname || '',
       reason: report.reason,
       status: report.status,
-      remark: report.remark,
       createdAt: report.created_at,
-      handledAt: report.handled_at
+      resolvedAt: report.resolved_at
     })),
     pagination: {
       page,
@@ -83,7 +82,7 @@ export const getReports = async (page: number, pageSize: number, status?: string
   }
 }
 
-export const handleReport = async (id: number, status: string, remark?: string) => {
+export const handleReport = async (id: number, status: string) => {
   const report = await prisma.reports.findUnique({ where: { id } })
   if (!report) {
     throw new AppError('举报工单不存在', 404)
@@ -93,17 +92,17 @@ export const handleReport = async (id: number, status: string, remark?: string) 
     where: { id },
     data: {
       status: status as 'resolved',
-      remark: remark || '',
-      handled_at: new Date()
+      resolved_at: new Date()
     }
   })
 
   if (status === 'resolved') {
     await prisma.admin_logs.create({
       data: {
+        admin_id: 1,
         action: 'handle_report',
         target_id: id,
-        description: `处理举报工单: ${id}`
+        detail: `处理举报工单: ${id}`
       }
     })
   }

@@ -57,7 +57,7 @@ export const sendMessage = async (userId: number, content: string) => {
 
   const message = await prisma.messages.create({
     data: {
-      user_id: userId,
+      sender_id: userId,
       content,
       type: 'public'
     },
@@ -81,7 +81,7 @@ export const sendPrivateMessage = async (userId: number, content: string) => {
 
   const message = await prisma.messages.create({
     data: {
-      user_id: userId,
+      sender_id: userId,
       content,
       type: 'private'
     },
@@ -109,8 +109,8 @@ export const likeMessage = async (userId: number, messageId: number) => {
     throw new AppError('消息不存在', 404)
   }
 
-  const existingLike = await prisma.likes.findUnique({
-    where: { user_id_message_id: { user_id: userId, message_id: messageId } }
+  const existingLike = await prisma.likes.findFirst({
+    where: { user_id: userId, message_id: messageId }
   })
 
   if (existingLike) {

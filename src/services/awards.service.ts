@@ -78,9 +78,10 @@ export const createAward = async ({ title, description, imageUrl, awardDate, sor
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'create_award',
       target_id: award.id,
-      description: `创建获奖记录: ${title}`
+      detail: `创建获奖记录: ${title}`
     }
   })
 
@@ -114,9 +115,10 @@ export const updateAward = async (id: number, { title, description, imageUrl, aw
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'update_award',
       target_id: id,
-      description: `更新获奖记录: ${id}`
+      detail: `更新获奖记录: ${id}`
     }
   })
 }
@@ -131,9 +133,10 @@ export const deleteAward = async (id: number) => {
 
   await prisma.admin_logs.create({
     data: {
+      admin_id: 1,
       action: 'delete_award',
       target_id: id,
-      description: `删除获奖记录: ${award.title}`
+      detail: `删除获奖记录: ${award.title}`
     }
   })
 }

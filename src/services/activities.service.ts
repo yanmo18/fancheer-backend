@@ -10,19 +10,23 @@ import AppError from '../utils/appError'
 
 export const getActivities = async () => {
   const activities = await prisma.activities.findMany({
-    orderBy: { activity_date: 'asc' },
+    orderBy: { start_time: 'asc' },
     select: {
       id: true,
       title: true,
       description: true,
-      activity_date: true,
+      cover_url: true,
+      start_time: true,
+      end_time: true,
       sort_order: true
     }
   })
 
   return activities.map(activity => ({
     ...activity,
-    activityDate: activity.activity_date,
+    coverUrl: activity.cover_url,
+    startTime: activity.start_time,
+    endTime: activity.end_time,
     sortOrder: activity.sort_order
   }))
 }
@@ -33,7 +37,7 @@ export const getAdminActivities = async (page: number, pageSize: number) => {
     prisma.activities.findMany({
       skip,
       take: pageSize,
-      orderBy: { activity_date: 'asc' }
+      orderBy: { start_time: 'asc' }
     }),
     prisma.activities.count()
   ])
@@ -41,10 +45,11 @@ export const getAdminActivities = async (page: number, pageSize: number) => {
   return {
     list: list.map(activity => ({
       ...activity,
-      activityDate: activity.activity_date,
+      coverUrl: activity.cover_url,
+      startTime: activity.start_time,
+      endTime: activity.end_time,
       sortOrder: activity.sort_order,
-      createdAt: activity.created_at,
-      updatedAt: activity.updated_at
+      createdAt: activity.created_at
     })),
     pagination: {
       page,
@@ -55,17 +60,21 @@ export const getAdminActivities = async (page: number, pageSize: number) => {
   }
 }
 
-export const createActivity = async ({ title, description, activityDate, sortOrder }: {
+export const createActivity = async ({ title, description, coverUrl, startTime, endTime, sortOrder }: {
   title: string
   description?: string
-  activityDate: string
+  coverUrl?: string
+  startTime: string
+  endTime?: string
   sortOrder?: number
 }) => {
   const activity = await prisma.activities.create({
     data: {
       title,
       description: description || '',
-      activity_date: activityDate,
+      cover_url: coverUrl || '',
+      start_time: startTime,
+      end_time: endTime || null,
       sort_order: sortOrder || 0
     },
     select: { id: true }
@@ -74,10 +83,12 @@ export const createActivity = async ({ title, description, activityDate, sortOrd
   return { id: activity.id }
 }
 
-export const updateActivity = async (id: number, { title, description, activityDate, sortOrder }: {
+export const updateActivity = async (id: number, { title, description, coverUrl, startTime, endTime, sortOrder }: {
   title?: string
   description?: string
-  activityDate?: string
+  coverUrl?: string
+  startTime?: string
+  endTime?: string
   sortOrder?: number
 }) => {
   const activity = await prisma.activities.findUnique({ where: { id } })
@@ -88,9 +99,10 @@ export const updateActivity = async (id: number, { title, description, activityD
   const updateData: Record<string, any> = {}
   if (title !== undefined) updateData.title = title
   if (description !== undefined) updateData.description = description
-  if (activityDate !== undefined) updateData.activity_date = activityDate
+  if (coverUrl !== undefined) updateData.cover_url = coverUrl
+  if (startTime !== undefined) updateData.start_time = startTime
+  if (endTime !== undefined) updateData.end_time = endTime || null
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
-  updateData.updated_at = new Date()
 
   await prisma.activities.update({
     where: { id },

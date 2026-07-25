@@ -28,10 +28,10 @@ export const getReports = async (req: Request, res: Response) => {
 
 export const handleReport = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { status, remark } = req.body
+  const { status } = req.body
 
   if (!status) return res.json(fail('处理状态不能为空', 400))
 
-  await reportsService.handleReport(Number(id), status, remark)
+  await reportsService.handleReport(Number(id), status)
   return res.json(success(null, '举报处理成功'))
 }

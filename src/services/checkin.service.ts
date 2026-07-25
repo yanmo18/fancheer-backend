@@ -14,7 +14,7 @@ export const checkin = async (userId: number) => {
   const existingCheckin = await prisma.check_ins.findFirst({
     where: {
       user_id: userId,
-      check_in_date: today
+      check_date: today
     }
   })
 
@@ -25,7 +25,7 @@ export const checkin = async (userId: number) => {
   await prisma.check_ins.create({
     data: {
       user_id: userId,
-      check_in_date: today
+      check_date: today
     }
   })
 
@@ -39,15 +39,15 @@ export const getCheckinCalendar = async (userId: number, year: number, month: nu
   const checkins = await prisma.check_ins.findMany({
     where: {
       user_id: userId,
-      check_in_date: {
+      check_date: {
         gte: startDate,
         lte: endDate
       }
     },
-    select: { check_in_date: true }
+    select: { check_date: true }
   })
 
-  const checkedDates = new Set(checkins.map(c => c.check_in_date))
+  const checkedDates = new Set(checkins.map(c => c.check_date))
 
   return {
     year,
