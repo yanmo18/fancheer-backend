@@ -5,12 +5,13 @@
  *       接收请求参数、调用服务层、返回响应
  */
 
-import { Request, Response } from 'express'
+import { Response } from 'express'
+import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
 import { validateNickname } from '../utils/validate'
 import userService from '../services/user.service'
 
-export const updateNickname = async (req: Request, res: Response) => {
+export const updateNickname = async (req: UserRequest, res: Response) => {
   const userId = req.user?.id
   const { nickname } = req.body
 
@@ -21,7 +22,7 @@ export const updateNickname = async (req: Request, res: Response) => {
   return res.json(success(result, '昵称修改成功'))
 }
 
-export const updateAvatar = async (req: Request, res: Response) => {
+export const updateAvatar = async (req: UserRequest, res: Response) => {
   const userId = req.user?.id
   const { avatarId } = req.body
 
@@ -31,7 +32,15 @@ export const updateAvatar = async (req: Request, res: Response) => {
   return res.json(success(result, '头像修改成功'))
 }
 
-export const getAvatars = async (req: Request, res: Response) => {
+export const getAvatars = async (req: UserRequest, res: Response) => {
   const result = await userService.getAvatars()
+  return res.json(success(result))
+}
+
+export const getPrivateReplies = async (req: UserRequest, res: Response) => {
+  const userId = req.user?.id
+  const { page = 1, pageSize = 20 } = req.query
+
+  const result = await userService.getPrivateReplies(userId!, Number(page), Number(pageSize))
   return res.json(success(result))
 }

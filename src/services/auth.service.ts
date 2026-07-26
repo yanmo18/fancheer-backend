@@ -24,7 +24,7 @@ export const getCaptcha = async () => {
   })
 
   const captchaId = crypto.randomUUID()
-  await redis.set(`captcha:${captchaId}`, captcha.text.toLowerCase(), 'EX', 300)
+  await redis.set(`${captchaId}:svg_captcha`, captcha.text.toLowerCase(), 'EX', 300)
 
   return {
     svg: captcha.data,
@@ -38,12 +38,12 @@ export const register = async ({ username, password, captchaId, captchaText }: {
   captchaId: string
   captchaText: string
 }) => {
-  const storedCaptcha = await redis.get(`captcha:${captchaId}`)
+  const storedCaptcha = await redis.get(`${captchaId}:svg_captcha`)
   if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
     throw new AppError('验证码错误', 400)
   }
 
-  await redis.del(`captcha:${captchaId}`)
+  await redis.del(`${captchaId}:svg_captcha`)
 
   const existingUser = await prisma.users.findUnique({ where: { username } })
   if (existingUser) {
@@ -85,7 +85,7 @@ export const login = async ({ username, password }: {
   }
 
   const jti = crypto.randomUUID()
-  const token = signToken({ userId: user.id, role: user.role, jti })
+  const token = signToken({ userId: Number(user.id), role: user.role, jti })
 
   await prisma.users.update({
     where: { id: user.id },

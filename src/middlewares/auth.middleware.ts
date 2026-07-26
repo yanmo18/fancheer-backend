@@ -10,12 +10,13 @@
  *   router.get('/me', authMiddleware, getMe)
  */
 
-import { Request, Response, NextFunction } from 'express'
+import { Response, NextFunction } from 'express'
 import { verifyToken } from '../config/jwt'
 import { fail } from '../utils/response'
-import { redis } from '../config/redis'
+import redis from '../config/redis'
+import { UserRequest } from '../types'
 
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: UserRequest, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.replace('Bearer ', '')
   
   if (!token) {

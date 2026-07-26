@@ -8,45 +8,44 @@
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
 
-export const getCharacters = async () => {
-  const characters = await prisma.graph_characters.findMany({
-    select: {
-      id: true,
-      name: true,
-      avatar_url: true,
-      bio: true,
-      is_center: true,
-      sort_order: true
-    }
-  })
+export const getGraph = async () => {
+  const [characters, relations] = await Promise.all([
+    prisma.graph_characters.findMany({
+      select: {
+        id: true,
+        name: true,
+        avatar_url: true,
+        bio: true,
+        is_center: true,
+        sort_order: true
+      }
+    }),
+    prisma.graph_relations.findMany({
+      select: {
+        id: true,
+        from_character_id: true,
+        to_character_id: true,
+        relation_label: true,
+        sort_order: true
+      }
+    })
+  ])
 
-  return characters.map(char => ({
-    ...char,
-    avatarUrl: char.avatar_url,
-    bio: char.bio,
-    isCenter: char.is_center,
-    sortOrder: char.sort_order
-  }))
-}
-
-export const getRelations = async () => {
-  const relations = await prisma.graph_relations.findMany({
-    select: {
-      id: true,
-      from_character_id: true,
-      to_character_id: true,
-      relation_label: true,
-      sort_order: true
-    }
-  })
-
-  return relations.map(rel => ({
-    ...rel,
-    fromCharacterId: rel.from_character_id,
-    toCharacterId: rel.to_character_id,
-    relationLabel: rel.relation_label,
-    sortOrder: rel.sort_order
-  }))
+  return {
+    characters: characters.map(char => ({
+      id: char.id,
+      name: char.name,
+      avatarUrl: char.avatar_url || '',
+      bio: char.bio || '',
+      isCenter: char.is_center
+    })),
+    relations: relations.map(rel => ({
+      id: rel.id,
+      fromCharacterId: rel.from_character_id,
+      toCharacterId: rel.to_character_id,
+      relationLabel: rel.relation_label || ''
+    }))
+  }
 }
 
 export const getAdminCharacters = async (page: number, pageSize: number) => {
@@ -226,8 +225,7 @@ export const deleteRelation = async (id: number) => {
 }
 
 export default {
-  getCharacters,
-  getRelations,
+  getGraph,
   getAdminCharacters,
   createCharacter,
   updateCharacter,

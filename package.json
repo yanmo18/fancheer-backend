@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@prisma/client": "^7.9.0",
+    "@types/uuid": "^11.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dayjs": "^1.11.21",
@@ -43,6 +44,7 @@
     "multer": "^2.2.0",
     "sharp": "^0.35.3",
     "svg-captcha": "^1.4.0",
+    "uuid": "^14.0.1",
     "xss": "^1.0.15"
   }
 }

@@ -46,8 +46,7 @@ export const getAdminSongs = async (page: number, pageSize: number) => {
       audioUrl: song.audio_url,
       coverUrl: song.cover_url,
       sortOrder: song.sort_order,
-      createdAt: song.created_at,
-      updatedAt: song.updated_at
+      createdAt: song.created_at
     })),
     pagination: {
       page,

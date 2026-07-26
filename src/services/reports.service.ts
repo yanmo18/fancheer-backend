@@ -1,43 +1,12 @@
 /**
  * 举报工单服务
  * 
- * 作用：实现举报工单相关业务逻辑（提交举报/处理举报）
+ * 作用：实现举报工单相关业务逻辑（后台管理）
  *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
-
-export const createReport = async (userId: number, messageId: number, reason: string) => {
-  const message = await prisma.messages.findUnique({ where: { id: messageId } })
-  if (!message) {
-    throw new AppError('举报消息不存在', 404)
-  }
-
-  const existingReport = await prisma.reports.findFirst({
-    where: {
-      reporter_id: userId,
-      message_id: messageId,
-      status: 'pending'
-    }
-  })
-
-  if (existingReport) {
-    throw new AppError('您已经举报过这条消息了', 400)
-  }
-
-  const report = await prisma.reports.create({
-    data: {
-      reporter_id: userId,
-      message_id: messageId,
-      reason,
-      status: 'pending'
-    },
-    select: { id: true }
-  })
-
-  return { id: report.id }
-}
 
 export const getReports = async (page: number, pageSize: number, status?: string) => {
   const skip = (page - 1) * pageSize
@@ -54,20 +23,30 @@ export const getReports = async (page: number, pageSize: number, status?: string
       take: pageSize,
       orderBy: { created_at: 'desc' },
       include: {
-        messages: { select: { id: true, content: true, user_id: true } },
+        messages: { select: { id: true, content: true, sender_id: true, type: true } },
         users: { select: { id: true, nickname: true } }
       }
     }),
     prisma.reports.count({ where: whereClause })
   ])
 
+  const senderIds = list.map(r => r.messages?.sender_id).filter(Boolean) as bigint[]
+  const senders = await prisma.users.findMany({
+    where: { id: { in: senderIds } },
+    select: { id: true, nickname: true }
+  })
+  const senderMap = new Map(senders.map(s => [s.id, s.nickname]))
+
   return {
     list: list.map(report => ({
-      id: report.id,
-      messageId: report.message_id,
-      messageContent: report.messages?.content || '',
-      reporterId: report.reporter_id,
+      id: Number(report.id),
+      reporterId: Number(report.reporter_id),
       reporterNickname: report.users?.nickname || '',
+      messageId: Number(report.message_id),
+      messageContent: report.messages?.content || '',
+      messageType: report.messages?.type || '',
+      messageSenderId: report.messages?.sender_id ? Number(report.messages.sender_id) : 0,
+      messageSenderNickname: senderMap.get(report.messages?.sender_id || 0n) || '',
       reason: report.reason,
       status: report.status,
       createdAt: report.created_at,
@@ -82,34 +61,111 @@ export const getReports = async (page: number, pageSize: number, status?: string
   }
 }
 
-export const handleReport = async (id: number, status: string) => {
+export const getReportDetail = async (id: number) => {
+  const report = await prisma.reports.findUnique({
+    where: { id },
+    include: {
+      messages: { select: { id: true, content: true, sender_id: true, type: true } },
+      users: { select: { id: true, nickname: true } }
+    }
+  })
+
+  if (!report) {
+    throw new AppError('举报工单不存在', 404)
+  }
+
+  const sender = await prisma.users.findUnique({
+    where: { id: report.messages?.sender_id || 0 },
+    select: { id: true, nickname: true }
+  })
+
+  return {
+    id: report.id,
+    reporterId: report.reporter_id,
+    reporterNickname: report.users?.nickname || '',
+    messageId: report.message_id,
+    messageContent: report.messages?.content || '',
+    messageType: report.messages?.type || '',
+    messageSenderId: report.messages?.sender_id || 0,
+    messageSenderNickname: sender?.nickname || '',
+    reason: report.reason,
+    status: report.status,
+    resolvedAt: report.resolved_at,
+    createdAt: report.created_at
+  }
+}
+
+export const resolveReport = async (id: number, adminId: number) => {
   const report = await prisma.reports.findUnique({ where: { id } })
   if (!report) {
     throw new AppError('举报工单不存在', 404)
   }
 
+  if (report.status === 'resolved') {
+    throw new AppError('工单已办结', 400)
+  }
+
   await prisma.reports.update({
     where: { id },
     data: {
-      status: status as 'resolved',
+      status: 'resolved',
       resolved_at: new Date()
     }
   })
 
-  if (status === 'resolved') {
-    await prisma.admin_logs.create({
-      data: {
-        admin_id: 1,
-        action: 'handle_report',
-        target_id: id,
-        detail: `处理举报工单: ${id}`
-      }
-    })
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'resolve_report',
+      target_type: 'report',
+      target_id: id,
+      detail: `办结举报工单: ${id}`
+    }
+  })
+}
+
+export const deleteViolationMessage = async (reportId: number, adminId: number) => {
+  const report = await prisma.reports.findUnique({ 
+    where: { id: reportId },
+    include: { messages: true }
+  })
+
+  if (!report) {
+    throw new AppError('举报工单不存在', 404)
   }
+
+  if (!report.messages) {
+    throw new AppError('关联消息不存在', 404)
+  }
+
+  const messageId = report.messages.id
+
+  await prisma.messages.delete({
+    where: { id: messageId }
+  })
+
+  await prisma.reports.updateMany({
+    where: { message_id: messageId },
+    data: {
+      status: 'resolved',
+      resolved_at: new Date()
+    }
+  })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'delete_violation_message',
+      target_type: 'message',
+      target_id: messageId,
+      detail: `删除违规消息: ${messageId}`
+    }
+  })
 }
 
 export default {
-  createReport,
   getReports,
-  handleReport
+  getReportDetail,
+  resolveReport,
+  deleteViolationMessage
 }

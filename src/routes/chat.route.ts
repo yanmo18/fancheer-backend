@@ -4,24 +4,42 @@
  * 作用：定义聊天室相关接口路由（发送消息/获取消息/点赞/私密消息）
  * 
  * 接口列表：
- *   GET  /api/chat/messages      - 获取公开消息列表（需要登录）
- *   POST /api/chat/message       - 发送公开消息（需要登录）
- *   POST /api/chat/private       - 发送私密消息（需要登录）
- *   POST /api/chat/messages/:id/like - 点赞消息（需要登录）
- *   GET  /api/chat/private       - 获取我的私密消息（需要登录）
+ *   GET  /api/messages/public    - 获取公开消息列表（轮询用）
+ *   GET  /api/messages/private   - 获取我的私密消息列表
+ *   POST /api/messages           - 发送消息（公开/私密）
+ *   POST /api/messages/:id/like  - 点赞消息
+ *   DELETE /api/messages/:id/like - 取消点赞
+ *   POST /api/messages/:id/report - 举报消息
+ *   POST /api/messages/:id/streamer-reply - 主播发送公开回复
+ *   POST /api/messages/:id/private-reply - 主播发送私密回复
+ *   GET  /api/messages/:id/private-replies - 获取某消息的回复列表
  */
 
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { requireRole } from '../middlewares/role.middleware'
-import { getMessages, sendMessage, sendPrivateMessage, likeMessage, getPrivateMessages } from '../controllers/chat.controller'
+import { 
+  getPublicMessages, 
+  getPrivateMessages, 
+  sendMessage, 
+  likeMessage, 
+  unlikeMessage,
+  reportMessage,
+  streamerReply,
+  privateReply,
+  getPrivateReplies
+} from '../controllers/chat.controller'
 
 const router = Router()
 
-router.get('/messages', authMiddleware, getMessages)
-router.post('/message', authMiddleware, sendMessage)
-router.post('/private', authMiddleware, sendPrivateMessage)
-router.post('/messages/:id/like', authMiddleware, likeMessage)
+router.get('/public', getPublicMessages)
 router.get('/private', authMiddleware, getPrivateMessages)
+router.post('/', authMiddleware, sendMessage)
+router.post('/:id/like', authMiddleware, likeMessage)
+router.delete('/:id/like', authMiddleware, unlikeMessage)
+router.post('/:id/report', authMiddleware, reportMessage)
+router.post('/:id/streamer-reply', authMiddleware, requireRole(['streamer']), streamerReply)
+router.post('/:id/private-reply', authMiddleware, requireRole(['streamer']), privateReply)
+router.get('/:id/private-replies', authMiddleware, getPrivateReplies)
 
 export default router

@@ -61,7 +61,7 @@ export const getAdminGallery = async (page: number, pageSize: number) => {
 
 export const createGalleryImage = async ({ imageUrl, category, sortOrder }: {
   imageUrl: string
-  category: string
+  category: 'anime' | 'real'
   sortOrder?: number
 }) => {
   const image = await prisma.gallery_images.create({

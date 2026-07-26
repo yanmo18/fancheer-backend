@@ -1,37 +1,45 @@
 /**
  * 举报工单控制器
  * 
- * 作用：处理举报工单相关请求（提交举报/处理举报）
+ * 作用：处理举报工单相关请求（后台管理）
  *       接收请求参数、调用服务层、返回响应
  */
 
-import { Request, Response } from 'express'
+import { Response } from 'express'
+import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
 import reportsService from '../services/reports.service'
 
-export const createReport = async (req: Request, res: Response) => {
-  const userId = req.user?.id
-  const { messageId, reason } = req.body
-
-  if (!messageId) return res.json(fail('举报消息ID不能为空', 400))
-  if (!reason) return res.json(fail('举报原因不能为空', 400))
-
-  const result = await reportsService.createReport(userId!, Number(messageId), reason)
-  return res.json(success(result, '举报提交成功'))
-}
-
-export const getReports = async (req: Request, res: Response) => {
-  const { page = 1, pageSize = 20, status } = req.query
-  const result = await reportsService.getReports(Number(page), Number(pageSize), status as string)
+export const getPendingReports = async (req: UserRequest, res: Response) => {
+  const { page = 1, pageSize = 20 } = req.query
+  const result = await reportsService.getReports(Number(page), Number(pageSize), 'pending')
   return res.json(success(result))
 }
 
-export const handleReport = async (req: Request, res: Response) => {
+export const getResolvedReports = async (req: UserRequest, res: Response) => {
+  const { page = 1, pageSize = 20 } = req.query
+  const result = await reportsService.getReports(Number(page), Number(pageSize), 'resolved')
+  return res.json(success(result))
+}
+
+export const getReportDetail = async (req: UserRequest, res: Response) => {
   const { id } = req.params
-  const { status } = req.body
+  const result = await reportsService.getReportDetail(Number(id))
+  return res.json(success(result))
+}
 
-  if (!status) return res.json(fail('处理状态不能为空', 400))
+export const resolveReport = async (req: UserRequest, res: Response) => {
+  const { id } = req.params
+  const adminId = req.user?.id
 
-  await reportsService.handleReport(Number(id), status)
-  return res.json(success(null, '举报处理成功'))
+  await reportsService.resolveReport(Number(id), adminId!)
+  return res.json(success(null, '工单已办结'))
+}
+
+export const deleteViolationMessage = async (req: UserRequest, res: Response) => {
+  const { id } = req.params
+  const adminId = req.user?.id
+
+  await reportsService.deleteViolationMessage(Number(id), adminId!)
+  return res.json(success(null, '违规消息已删除'))
 }

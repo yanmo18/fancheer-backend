@@ -9,11 +9,12 @@
  *   router.get('/admin/users', authMiddleware, requireRole(['admin', 'streamer']), getUsers)
  */
 
-import { Request, Response, NextFunction } from 'express'
+import { Response, NextFunction } from 'express'
 import { fail } from '../utils/response'
+import { UserRequest } from '../types'
 
 export const requireRole = (allowedRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: UserRequest, res: Response, next: NextFunction) => {
     const userRole = req.user?.role
     
     if (!userRole || !allowedRoles.includes(userRole)) {

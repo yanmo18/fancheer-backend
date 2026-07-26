@@ -17,6 +17,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import path from 'path'
 import requestLogger from './middlewares/requestLogger.middleware'
 import errorHandler from './middlewares/error.middleware'
 
@@ -31,6 +32,7 @@ app.use(requestLogger)
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 app.get('/', (req, res) => {
   res.json({
@@ -53,13 +55,14 @@ import activitiesRoutes from './routes/activities.route'
 import graphRoutes from './routes/graph.route'
 import reportsRoutes from './routes/reports.route'
 import adminRoutes from './routes/admin.route'
+import uploadRoutes from './routes/upload.route'
 
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api', bannerRoutes)
 app.use('/api', streamerRoutes)
 app.use('/api', awardsRoutes)
-app.use('/api/chat', chatRoutes)
+app.use('/api/messages', chatRoutes)
 app.use('/api/checkin', checkinRoutes)
 app.use('/api', galleryRoutes)
 app.use('/api', songsRoutes)
@@ -67,6 +70,7 @@ app.use('/api', activitiesRoutes)
 app.use('/api', graphRoutes)
 app.use('/api', reportsRoutes)
 app.use('/api', adminRoutes)
+app.use('/api', uploadRoutes)
 
 app.use(errorHandler)
 

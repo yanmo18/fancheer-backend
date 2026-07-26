@@ -4,8 +4,7 @@
  * 作用：定义关系图谱相关接口路由（人物/连线）
  * 
  * 接口列表：
- *   GET  /api/graph/characters   - 获取图谱人物列表（无需登录）
- *   GET  /api/graph/relations    - 获取图谱关系连线（无需登录）
+ *   GET  /api/graph               - 获取图谱（人物+关系连线，无需登录）
  *   GET  /api/admin/graph/characters - 后台获取人物（需要登录，admin/streamer）
  *   POST /api/admin/graph/characters - 新增人物（需要登录，admin/streamer）
  *   PUT  /api/admin/graph/characters/:id - 编辑人物（需要登录，admin/streamer）
@@ -19,12 +18,11 @@
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { requireRole } from '../middlewares/role.middleware'
-import { getCharacters, getRelations, getAdminCharacters, createCharacter, updateCharacter, deleteCharacter, getAdminRelations, createRelation, updateRelation, deleteRelation } from '../controllers/graph.controller'
+import { getGraph, getAdminCharacters, createCharacter, updateCharacter, deleteCharacter, getAdminRelations, createRelation, updateRelation, deleteRelation } from '../controllers/graph.controller'
 
 const router = Router()
 
-router.get('/graph/characters', getCharacters)
-router.get('/graph/relations', getRelations)
+router.get('/graph', getGraph)
 
 router.get('/admin/graph/characters', authMiddleware, requireRole(['admin', 'streamer']), getAdminCharacters)
 router.post('/admin/graph/characters', authMiddleware, requireRole(['admin', 'streamer']), createCharacter)

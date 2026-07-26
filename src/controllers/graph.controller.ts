@@ -9,13 +9,8 @@ import { Request, Response } from 'express'
 import { success, fail } from '../utils/response'
 import graphService from '../services/graph.service'
 
-export const getCharacters = async (req: Request, res: Response) => {
-  const result = await graphService.getCharacters()
-  return res.json(success(result))
-}
-
-export const getRelations = async (req: Request, res: Response) => {
-  const result = await graphService.getRelations()
+export const getGraph = async (req: Request, res: Response) => {
+  const result = await graphService.getGraph()
   return res.json(success(result))
 }
 
@@ -54,20 +49,20 @@ export const getAdminRelations = async (req: Request, res: Response) => {
 }
 
 export const createRelation = async (req: Request, res: Response) => {
-  const { fromCharacterId, toCharacterId, relationType } = req.body
+  const { fromCharacterId, toCharacterId, relationLabel } = req.body
 
   if (!fromCharacterId) return res.json(fail('起始人物ID不能为空', 400))
   if (!toCharacterId) return res.json(fail('目标人物ID不能为空', 400))
-  if (!relationType) return res.json(fail('关系类型不能为空', 400))
+  if (!relationLabel) return res.json(fail('关系类型不能为空', 400))
 
-  const result = await graphService.createRelation({ fromCharacterId, toCharacterId, relationType })
+  const result = await graphService.createRelation({ fromCharacterId, toCharacterId, relationLabel })
   return res.json(success(result, '关系创建成功'))
 }
 
 export const updateRelation = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { fromCharacterId, toCharacterId, relationType } = req.body
-  await graphService.updateRelation(Number(id), { fromCharacterId, toCharacterId, relationType })
+  const { fromCharacterId, toCharacterId, relationLabel } = req.body
+  await graphService.updateRelation(Number(id), { fromCharacterId, toCharacterId, relationLabel })
   return res.json(success(null, '关系更新成功'))
 }
 
