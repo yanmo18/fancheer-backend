@@ -1,6 +1,314 @@
-# Fancheer Backend - 修改日志
+# Fancheer Backend
 
-## 修改记录
+> Fancheer 粉丝官网后端服务 - 基于 Node.js + Express + Prisma 的 RESTful API 服务
+
+## 📋 项目概述
+
+Fancheer 是一个主播粉丝互动平台的后端服务，提供用户认证、聊天室、主播资料、音乐作品、活动管理等核心功能。
+
+## 🛠️ 技术栈
+
+| 技术 | 版本 | 用途 |
+|------|------|------|
+| Node.js | 20.x | 运行时环境 |
+| Express | 4.x | Web 框架 |
+| TypeScript | 7.x | 类型安全 |
+| Prisma | 7.x | ORM |
+| MySQL/MariaDB | 10.x | 数据库 |
+| Redis | 7.x | 缓存/限流 |
+| JWT | - | 身份认证 |
+| bcryptjs | - | 密码加密 |
+| multer | - | 文件上传 |
+| sharp | - | 图片处理 |
+| xss | - | XSS 过滤 |
+
+## 📁 目录结构
+
+```
+fancheer-backend/
+├── src/
+│   ├── app.ts                    # 应用入口
+│   ├── routes/                   # 路由定义
+│   │   ├── auth.route.ts         # 认证路由
+│   │   ├── chat.route.ts         # 聊天室路由
+│   │   ├── user.route.ts         # 用户路由
+│   │   ├── admin.route.ts        # 管理后台路由
+│   │   ├── banner.route.ts       # Banner路由
+│   │   ├── streamer.route.ts     # 主播路由
+│   │   ├── awards.route.ts       # 获奖记录路由
+│   │   ├── songs.route.ts        # 音乐作品路由
+│   │   ├── activities.route.ts   # 活动路由
+│   │   ├── gallery.route.ts      # 图集路由
+│   │   ├── upload.route.ts       # 上传路由
+│   │   └── checkin.route.ts      # 打卡路由
+│   ├── controllers/              # 控制器层
+│   ├── services/                 # 服务层
+│   ├── middlewares/              # 中间件
+│   │   ├── auth.middleware.ts    # 认证中间件
+│   │   ├── role.middleware.ts    # 角色权限中间件
+│   │   ├── error.middleware.ts   # 错误处理中间件
+│   │   └── cors.middleware.ts    # CORS中间件
+│   ├── config/                   # 配置文件
+│   │   ├── redis.ts              # Redis配置
+│   │   └── upload.ts             # 上传配置
+│   ├── utils/                    # 工具函数
+│   │   ├── appError.ts           # 应用错误类
+│   │   ├── response.ts           # 响应封装
+│   │   ├── validate.ts           # 数据验证
+│   │   ├── sanitize.ts           # XSS过滤
+│   │   └── sensitiveWord.ts      # 敏感词过滤
+│   ├── lib/                      # 库文件
+│   │   └── prisma.ts             # Prisma客户端
+│   └── types/                    # TypeScript类型定义
+├── prisma/
+│   ├── schema.prisma             # 数据库模型
+│   └── prisma.config.ts          # Prisma配置
+├── generated/
+│   └── prisma/                   # 生成的Prisma客户端
+├── uploads/                      # 上传文件存储目录
+├── word/                         # 项目文档
+├── package.json
+├── tsconfig.json
+├── .env                          # 环境变量
+└── seed.ts                       # 数据库种子数据
+```
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js 20+
+- MySQL/MariaDB 10+
+- Redis 7+
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 环境配置
+
+复制 `.env.example` 为 `.env`，修改数据库连接信息：
+
+```env
+PORT=3000
+DATABASE_URL="mysql://user:password@localhost:3306/fancheer"
+REDIS_URL="redis://localhost:6379"
+JWT_SECRET="your-secret-key"
+```
+
+### 数据库迁移
+
+```bash
+npx prisma migrate dev
+```
+
+### 生成种子数据
+
+```bash
+npm run seed
+```
+
+### 启动开发服务器
+
+```bash
+npm run dev
+```
+
+### 构建生产版本
+
+```bash
+npm run build
+```
+
+## 🔐 角色权限
+
+| 角色 | 说明 | 权限范围 |
+|------|------|----------|
+| admin | 管理员 | 全部功能，管理后台 |
+| streamer | 主播 | 聊天室、私密回复、上传音乐 |
+| fan | 粉丝 | 聊天室、发送消息、点赞、打卡 |
+
+## 📡 API 接口
+
+### 认证模块
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/auth/captcha` | GET | 获取图形验证码 |
+| `/api/auth/register` | POST | 用户注册 |
+| `/api/auth/login` | POST | 用户登录 |
+| `/api/auth/logout` | POST | 用户登出 |
+
+### 用户模块
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/users/profile` | GET | 获取用户信息 |
+| `/api/users/profile` | PUT | 修改用户昵称 |
+| `/api/users/avatar` | POST | 修改头像 |
+
+### 聊天室模块
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/messages/public` | GET | 获取公开消息 |
+| `/api/messages/public-replies` | GET | 获取主播公开回复 |
+| `/api/messages/private` | GET | 获取私密消息 |
+| `/api/messages` | POST | 发送消息 |
+| `/api/messages/:id/like` | POST | 点赞消息 |
+| `/api/messages/:id/like` | DELETE | 取消点赞 |
+| `/api/messages/:id/report` | POST | 举报消息 |
+| `/api/messages/:id/streamer-reply` | POST | 主播公开回复 |
+| `/api/messages/:id/private-reply` | POST | 主播私密回复 |
+
+### 管理后台模块
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/admin/banners` | GET/POST | Banner管理 |
+| `/api/admin/banners/:id` | PUT/DELETE | Banner详情/删除 |
+| `/api/admin/streamer-info` | GET/PUT | 主播资料管理 |
+| `/api/admin/awards` | GET/POST | 获奖记录管理 |
+| `/api/admin/songs` | GET/POST | 音乐作品管理 |
+| `/api/admin/activities` | GET/POST | 活动管理 |
+| `/api/admin/gallery` | GET/POST | 图集管理 |
+
+### 上传模块
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/upload/image` | POST | 上传图片 |
+| `/api/upload/audio` | POST | 上传音频 |
+
+### 其他模块
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/checkin` | POST | 每日打卡 |
+| `/api/checkin/history` | GET | 打卡历史 |
+
+## 🗄️ 数据库设计
+
+### 核心表结构
+
+| 表名 | 说明 |
+|------|------|
+| users | 用户表 |
+| avatars | 头像表 |
+| messages | 消息表 |
+| likes | 点赞表 |
+| reports | 举报表 |
+| private_replies | 私密回复表 |
+| banners | Banner表 |
+| streamer_info | 主播资料表 |
+| awards | 获奖记录表 |
+| songs | 音乐作品表 |
+| activities | 活动表 |
+| gallery_images | 图集表 |
+| check_ins | 打卡表 |
+| sensitive_words | 敏感词表 |
+| admin_logs | 管理员操作日志 |
+
+## 🔒 安全特性
+
+- **JWT 认证**：无状态身份验证
+- **XSS 过滤**：用户输入自动过滤
+- **敏感词检测**：昵称等字段敏感词检查
+- **请求限流**：消息发送频率限制（20秒/条）
+- **点赞幂等**：防止重复点赞
+- **密码加密**：bcryptjs 加密存储
+
+## 📦 配置说明
+
+### 文件上传限制
+
+- 图片：最大 10MB，自动压缩至质量 80%，最大宽度 1920px
+- 音频：最大 50MB
+
+### 响应格式
+
+成功响应：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": { ... }
+}
+```
+
+失败响应：
+```json
+{
+  "code": 400,
+  "msg": "错误信息",
+  "data": null
+}
+```
+
+---
+
+## 📝 修改日志
+
+### 2026-07-27 - 文档与代码一致性检查 & 冗余清理
+
+**修改文件：**
+- [src/services/user.service.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/services/user.service.ts)
+- [src/controllers/user.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/user.controller.ts)
+- [src/routes/user.route.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/routes/user.route.ts)
+- [word/04-后端底层基建、通用工具、中间件完整手册...md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-后端底层基建、通用工具、中间件完整手册（归属 + 源码 + 作用全解）【对齐最新V1.1接口文档】.md)
+
+**修改内容：**
+
+**代码修复：**
+1. **修复 `user.service.ts` 中 `getPrivateReplies` 缺少 `is_public` 过滤**：添加 `is_public: true` 条件，确保只返回主播公开发布的回复，与接口文档一致
+2. **删除 `user.service.ts` 中 `updateNickname` 的冗余敏感词检查**：控制器层已通过 `checkSensitiveWord()` 检查，服务层重复查询数据库，删除后减少一次数据库查询
+3. **删除冗余接口 `GET /api/user/private-replies`**：与 `GET /api/messages/private` 功能重复，统一使用接口文档定义的 `/api/messages/private` 接口
+
+**文档更新：**
+1. **更新后端基建文档中上传路由描述**：将"图片Base64上传"改为"图片/音频multipart/form-data上传，支持压缩"，与实际代码一致
+
+**修改原因：**
+- 文档与代码描述不一致，需要统一对齐
+- `getPrivateReplies` 缺少 `is_public` 过滤会导致粉丝看到未公开的回复
+- 用户模块和聊天室模块都有获取私密回复的接口，造成功能重复
+- `updateNickname` 中控制器和服务层重复检查敏感词，浪费数据库资源
+
+**完成成就：**
+- ✅ 文档与代码描述一致
+- ✅ 私密回复查询逻辑正确（只返回公开回复）
+- ✅ 冗余接口删除，统一使用接口文档定义的路径
+- ✅ 敏感词检查只在控制器层执行，减少一次数据库查询
+- ✅ TypeScript编译测试通过
+
+---
+
+### 2026-07-27 - 聊天窗口登录限制 & 完善项目文档
+
+**修改文件：**
+- [src/routes/chat.route.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/routes/chat.route.ts)
+- [src/services/chat.service.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/services/chat.service.ts)
+- [src/controllers/chat.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/chat.controller.ts)
+- [README.md](file:///d:/Seren-item/Fancheer/fancheer-backend/README.md)
+
+**修改内容：**
+- 所有聊天室接口添加 `authMiddleware`，游客必须登录才能使用聊天窗口功能
+- 新增 `getPublicReplies` 接口，获取主播对私密消息的公开回复（全员可见，匿名展示原消息）
+- 完善 README.md，添加项目概述、技术栈、目录结构、环境配置、启动方式、功能模块等详细信息
+
+**修改原因：**
+- 产品需求：游客必须登录才能使用聊天窗口功能
+- 主播私密回复需要对所有登录用户可见（匿名形式展示原消息）
+- README 需要包含完整的项目文档信息，不止更改日志
+
+**完成成就：**
+- ✅ 聊天室接口登录限制实现
+- ✅ 主播公开回复接口实现
+- ✅ 私密消息匿名公开展示功能完善
+- ✅ README.md 完善，包含项目详细信息
+
+---
 
 ### 2026-07-26 - 修改私密消息功能：主播私密回复全员可见（匿名展示）
 
@@ -8,8 +316,8 @@
 - [prisma/schema.prisma](file:///d:/Seren-item/Fancheer/fancheer-backend/prisma/schema.prisma)
 - [src/services/chat.service.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/services/chat.service.ts)
 - [src/controllers/chat.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/chat.controller.ts)
-- [word/01-听潮阁粉丝官网-PRD-V2.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/01-听潮阁粉丝官网-PRD-V2.md)
-- [word/04-听潮阁-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-听潮阁-接口文档.md)
+- [word/01-Fancheer粉丝官网-PRD-V2.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/01-Fancheer粉丝官网-PRD-V2.md)
+- [word/04-Fancheer-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-Fancheer-接口文档.md)
 - [word/04-后端底层基建、通用工具、中间件完整手册...md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-后端底层基建、通用工具、中间件完整手册（归属 + 源码 + 作用全解）【对齐最新V1.1接口文档】.md)
 
 **修改内容：**

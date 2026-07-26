@@ -20,6 +20,12 @@ export const getPublicMessages = async (req: UserRequest, res: Response) => {
   return res.json(success(result))
 }
 
+export const getPublicReplies = async (req: UserRequest, res: Response) => {
+  const { before, limit = 20 } = req.query
+  const result = await chatService.getPublicReplies(before as string, Number(limit))
+  return res.json(success(result))
+}
+
 export const getPrivateMessages = async (req: UserRequest, res: Response) => {
   const userId = req.user?.id
   const userRole = req.user?.role

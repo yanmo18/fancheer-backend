@@ -154,6 +154,35 @@ export const unlikeMessage = async (userId: number, messageId: number) => {
   return { likeCount: updatedMessage.like_count }
 }
 
+export const getPublicReplies = async (before?: string, limit: number = 20) => {
+  const whereClause: any = { is_public: true }
+  
+  if (before) {
+    whereClause.created_at = { lt: new Date(before) }
+  }
+
+  const replies = await prisma.private_replies.findMany({
+    where: whereClause,
+    take: Math.min(limit, 20),
+    orderBy: { created_at: 'desc' },
+    include: {
+      messages: { select: { content: true } },
+      users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatar_id: true, avatars: true } }
+    }
+  })
+
+  return replies.map(reply => ({
+    id: reply.id,
+    messageId: reply.message_id,
+    originalContent: reply.messages?.content || '',
+    streamerId: reply.streamer_id,
+    streamerNickname: reply.users_private_replies_streamer_idTousers?.nickname || '',
+    streamerAvatar: reply.users_private_replies_streamer_idTousers?.avatars?.url || '',
+    content: reply.content,
+    createdAt: reply.created_at
+  }))
+}
+
 export const getPrivateMessages = async (userId: number, page: number, pageSize: number) => {
   const skip = (page - 1) * pageSize
 
@@ -341,6 +370,7 @@ export const getPrivateReplies = async (messageId: number, userId: number, userR
 
 export default {
   getPublicMessages,
+  getPublicReplies,
   sendMessage,
   likeMessage,
   unlikeMessage,

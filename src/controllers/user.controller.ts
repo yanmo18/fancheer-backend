@@ -43,11 +43,3 @@ export const getAvatars = async (req: UserRequest, res: Response) => {
   const result = await userService.getAvatars()
   return res.json(success(result))
 }
-
-export const getPrivateReplies = async (req: UserRequest, res: Response) => {
-  const userId = req.user?.id
-  const { page = 1, pageSize = 20 } = req.query
-
-  const result = await userService.getPrivateReplies(userId!, Number(page), Number(pageSize))
-  return res.json(success(result))
-}

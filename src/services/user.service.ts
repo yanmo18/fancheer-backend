@@ -9,13 +9,6 @@ import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
 
 export const updateNickname = async (userId: number, nickname: string) => {
-  const sensitiveWords = await prisma.sensitive_words.findMany()
-  for (const word of sensitiveWords) {
-    if (nickname.includes(word.word)) {
-      throw new AppError('昵称包含敏感词，请修改', 400)
-    }
-  }
-
   const user = await prisma.users.update({
     where: { id: userId },
     data: { nickname, updated_at: new Date() },
@@ -48,44 +41,8 @@ export const getAvatars = async () => {
   return avatars
 }
 
-export const getPrivateReplies = async (userId: number, page: number, pageSize: number) => {
-  const skip = (page - 1) * pageSize
-
-  const [list, total] = await Promise.all([
-    prisma.private_replies.findMany({
-      where: { target_user_id: userId },
-      skip,
-      take: pageSize,
-      orderBy: { created_at: 'desc' },
-      include: {
-        messages: { select: { id: true, content: true } },
-        users_private_replies_streamer_idTousers: { select: { id: true, nickname: true } }
-      }
-    }),
-    prisma.private_replies.count({ where: { target_user_id: userId } })
-  ])
-
-  return {
-    list: list.map(reply => ({
-      id: reply.id,
-      messageId: reply.message_id,
-      originalMessageContent: reply.messages?.content || '',
-      content: reply.content,
-      streamerNickname: reply.users_private_replies_streamer_idTousers?.nickname || '',
-      createdAt: reply.created_at
-    })),
-    pagination: {
-      page,
-      pageSize,
-      total,
-      totalPages: Math.ceil(total / pageSize)
-    }
-  }
-}
-
 export default {
   updateNickname,
   updateAvatar,
-  getAvatars,
-  getPrivateReplies
+  getAvatars
 }

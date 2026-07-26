@@ -20,6 +20,7 @@ import { authMiddleware } from '../middlewares/auth.middleware'
 import { requireRole } from '../middlewares/role.middleware'
 import { 
   getPublicMessages, 
+  getPublicReplies,
   getPrivateMessages, 
   sendMessage, 
   likeMessage, 
@@ -32,7 +33,8 @@ import {
 
 const router = Router()
 
-router.get('/public', getPublicMessages)
+router.get('/public', authMiddleware, getPublicMessages)
+router.get('/public-replies', authMiddleware, getPublicReplies)
 router.get('/private', authMiddleware, getPrivateMessages)
 router.post('/', authMiddleware, sendMessage)
 router.post('/:id/like', authMiddleware, likeMessage)
