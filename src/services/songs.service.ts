@@ -63,7 +63,7 @@ export const createSong = async ({ title, artist, audioUrl, coverUrl, sortOrder 
   audioUrl: string
   coverUrl?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const song = await prisma.songs.create({
     data: {
       title,
@@ -75,6 +75,15 @@ export const createSong = async ({ title, artist, audioUrl, coverUrl, sortOrder 
     select: { id: true }
   })
 
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'create_song',
+      target_id: song.id,
+      detail: `创建歌曲: ${title}`
+    }
+  })
+
   return { id: song.id }
 }
 
@@ -84,7 +93,7 @@ export const updateSong = async (id: number, { title, artist, audioUrl, coverUrl
   audioUrl?: string
   coverUrl?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const song = await prisma.songs.findUnique({ where: { id } })
   if (!song) {
     throw new AppError('歌曲不存在', 404)
@@ -102,15 +111,33 @@ export const updateSong = async (id: number, { title, artist, audioUrl, coverUrl
     where: { id },
     data: updateData
   })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'update_song',
+      target_id: id,
+      detail: `更新歌曲: ${id}`
+    }
+  })
 }
 
-export const deleteSong = async (id: number) => {
+export const deleteSong = async (id: number, adminId: number) => {
   const song = await prisma.songs.findUnique({ where: { id } })
   if (!song) {
     throw new AppError('歌曲不存在', 404)
   }
 
   await prisma.songs.delete({ where: { id } })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'delete_song',
+      target_id: id,
+      detail: `删除歌曲: ${song.title}`
+    }
+  })
 }
 
 export default {

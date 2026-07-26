@@ -64,7 +64,7 @@ export const createAward = async ({ title, description, imageUrl, awardDate, sor
   imageUrl?: string
   awardDate?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const award = await prisma.awards.create({
     data: {
       title,
@@ -78,7 +78,7 @@ export const createAward = async ({ title, description, imageUrl, awardDate, sor
 
   await prisma.admin_logs.create({
     data: {
-      admin_id: 1,
+      admin_id: adminId,
       action: 'create_award',
       target_id: award.id,
       detail: `创建获奖记录: ${title}`
@@ -94,7 +94,7 @@ export const updateAward = async (id: number, { title, description, imageUrl, aw
   imageUrl?: string
   awardDate?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const award = await prisma.awards.findUnique({ where: { id } })
   if (!award) {
     throw new AppError('获奖记录不存在', 404)
@@ -115,7 +115,7 @@ export const updateAward = async (id: number, { title, description, imageUrl, aw
 
   await prisma.admin_logs.create({
     data: {
-      admin_id: 1,
+      admin_id: adminId,
       action: 'update_award',
       target_id: id,
       detail: `更新获奖记录: ${id}`
@@ -123,7 +123,7 @@ export const updateAward = async (id: number, { title, description, imageUrl, aw
   })
 }
 
-export const deleteAward = async (id: number) => {
+export const deleteAward = async (id: number, adminId: number) => {
   const award = await prisma.awards.findUnique({ where: { id } })
   if (!award) {
     throw new AppError('获奖记录不存在', 404)
@@ -133,7 +133,7 @@ export const deleteAward = async (id: number) => {
 
   await prisma.admin_logs.create({
     data: {
-      admin_id: 1,
+      admin_id: adminId,
       action: 'delete_award',
       target_id: id,
       detail: `删除获奖记录: ${award.title}`

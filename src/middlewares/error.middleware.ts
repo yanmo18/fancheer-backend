@@ -20,7 +20,7 @@ export default function errorHandler(
   next: NextFunction
 ) {
   if (err instanceof AppError) {
-    return res.status(err.code).json({
+    return res.status(200).json({
       code: err.code,
       msg: err.message,
       data: null
@@ -28,7 +28,7 @@ export default function errorHandler(
   }
 
   console.error('❌ 服务异常：', err)
-  res.status(500).json({
+  res.status(200).json({
     code: 500,
     msg: '服务器内部错误',
     data: null

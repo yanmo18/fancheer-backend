@@ -63,7 +63,7 @@ export const createGalleryImage = async ({ imageUrl, category, sortOrder }: {
   imageUrl: string
   category: 'anime' | 'real'
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const image = await prisma.gallery_images.create({
     data: {
       url: imageUrl,
@@ -73,6 +73,15 @@ export const createGalleryImage = async ({ imageUrl, category, sortOrder }: {
     select: { id: true }
   })
 
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'create_gallery_image',
+      target_id: image.id,
+      detail: `创建图集图片: ${category}`
+    }
+  })
+
   return { id: image.id }
 }
 
@@ -80,7 +89,7 @@ export const updateGalleryImage = async (id: number, { imageUrl, category, sortO
   imageUrl?: string
   category?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const image = await prisma.gallery_images.findUnique({ where: { id } })
   if (!image) {
     throw new AppError('图片不存在', 404)
@@ -95,15 +104,33 @@ export const updateGalleryImage = async (id: number, { imageUrl, category, sortO
     where: { id },
     data: updateData
   })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'update_gallery_image',
+      target_id: id,
+      detail: `更新图集图片: ${id}`
+    }
+  })
 }
 
-export const deleteGalleryImage = async (id: number) => {
+export const deleteGalleryImage = async (id: number, adminId: number) => {
   const image = await prisma.gallery_images.findUnique({ where: { id } })
   if (!image) {
     throw new AppError('图片不存在', 404)
   }
 
   await prisma.gallery_images.delete({ where: { id } })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'delete_gallery_image',
+      target_id: id,
+      detail: `删除图集图片: ${id}`
+    }
+  })
 }
 
 export default {

@@ -67,7 +67,7 @@ export const createActivity = async ({ title, description, coverUrl, startTime, 
   startTime: string
   endTime?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const activity = await prisma.activities.create({
     data: {
       title,
@@ -80,6 +80,15 @@ export const createActivity = async ({ title, description, coverUrl, startTime, 
     select: { id: true }
   })
 
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'create_activity',
+      target_id: activity.id,
+      detail: `创建活动: ${title}`
+    }
+  })
+
   return { id: activity.id }
 }
 
@@ -90,7 +99,7 @@ export const updateActivity = async (id: number, { title, description, coverUrl,
   startTime?: string
   endTime?: string
   sortOrder?: number
-}) => {
+}, adminId: number) => {
   const activity = await prisma.activities.findUnique({ where: { id } })
   if (!activity) {
     throw new AppError('活动不存在', 404)
@@ -108,15 +117,33 @@ export const updateActivity = async (id: number, { title, description, coverUrl,
     where: { id },
     data: updateData
   })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'update_activity',
+      target_id: id,
+      detail: `更新活动: ${id}`
+    }
+  })
 }
 
-export const deleteActivity = async (id: number) => {
+export const deleteActivity = async (id: number, adminId: number) => {
   const activity = await prisma.activities.findUnique({ where: { id } })
   if (!activity) {
     throw new AppError('活动不存在', 404)
   }
 
   await prisma.activities.delete({ where: { id } })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'delete_activity',
+      target_id: id,
+      detail: `删除活动: ${activity.title}`
+    }
+  })
 }
 
 export default {
