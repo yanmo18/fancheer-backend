@@ -8,6 +8,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import streamerService from '../services/streamer.service'
 
 export const getStreamerInfo = async (req: UserRequest, res: Response) => {
@@ -24,6 +25,11 @@ export const updateStreamerInfo = async (req: UserRequest, res: Response) => {
   const { name, avatarUrl, tags, bio } = req.body
   const adminId = req.user?.id
 
-  await streamerService.updateStreamerInfo({ name, avatarUrl, tags, bio }, adminId!)
+  await streamerService.updateStreamerInfo({ 
+    name: sanitize(name), 
+    avatarUrl, 
+    tags: sanitize(tags), 
+    bio: sanitize(bio) 
+  }, adminId!)
   return res.json(success(null, '主播资料更新成功'))
 }

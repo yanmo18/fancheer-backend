@@ -23,6 +23,8 @@ import errorHandler from './middlewares/error.middleware'
 
 dotenv.config()
 
+;(BigInt.prototype as any).toJSON = function () { return this.toString() }
+
 import './config/redis'
 
 const app = express()
@@ -74,7 +76,10 @@ app.use('/api', uploadRoutes)
 
 app.use(errorHandler)
 
-app.listen(PORT, () => {
+import { loadSensitiveWords } from './utils/sensitiveWord'
+
+app.listen(PORT, async () => {
+  await loadSensitiveWords()
   console.log(`🚀 服务运行在 http://localhost:${PORT}`)
 })
 

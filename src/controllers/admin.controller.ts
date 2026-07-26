@@ -8,11 +8,12 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import adminService from '../services/admin.service'
 
 export const getUsers = async (req: UserRequest, res: Response) => {
   const { page = 1, pageSize = 20, role, status, keyword } = req.query
-  const result = await adminService.getUsers(Number(page), Number(pageSize), role as string, status as string, keyword as string)
+  const result = await adminService.getUsers(Number(page), Number(pageSize), role as string, status as string, sanitize(keyword as string))
   return res.json(success(result))
 }
 
@@ -34,7 +35,7 @@ export const unbanUser = async (req: UserRequest, res: Response) => {
 
 export const getPublicMessages = async (req: UserRequest, res: Response) => {
   const { page = 1, pageSize = 20, keyword } = req.query
-  const result = await adminService.getPublicMessages(Number(page), Number(pageSize), keyword as string)
+  const result = await adminService.getPublicMessages(Number(page), Number(pageSize), sanitize(keyword as string))
   return res.json(success(result))
 }
 
@@ -64,7 +65,7 @@ export const createAvatar = async (req: UserRequest, res: Response) => {
 
   if (!url) return res.json(fail('头像URL不能为空', 400))
 
-  const result = await adminService.createAvatar(url, Number(sortOrder), adminId!)
+  const result = await adminService.createAvatar(sanitize(url), Number(sortOrder), adminId!)
   return res.json(success(result, '头像添加成功'))
 }
 
@@ -88,7 +89,7 @@ export const createSensitiveWord = async (req: UserRequest, res: Response) => {
 
   if (!word) return res.json(fail('敏感词不能为空', 400))
 
-  const result = await adminService.createSensitiveWord(word, adminId!)
+  const result = await adminService.createSensitiveWord(sanitize(word), adminId!)
   return res.json(success(result, '敏感词添加成功'))
 }
 

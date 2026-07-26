@@ -9,6 +9,7 @@ import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
 import { validateMessage } from '../utils/validate'
+import { sanitize } from '../utils/sanitize'
 import chatService from '../services/chat.service'
 
 export const getPublicMessages = async (req: UserRequest, res: Response) => {
@@ -36,14 +37,15 @@ export const sendMessage = async (req: UserRequest, res: Response) => {
   const userId = req.user?.id
   const { content, type = 'public' } = req.body
 
-  const error = validateMessage(content)
+  const sanitizedContent = sanitize(content)
+  const error = validateMessage(sanitizedContent)
   if (error) return res.json(fail(error, 400))
 
   if (type !== 'public' && type !== 'private') {
     return res.json(fail('消息类型必须为 public 或 private', 400))
   }
 
-  const result = await chatService.sendMessage(userId!, content, type)
+  const result = await chatService.sendMessage(userId!, sanitizedContent, type)
   return res.json(success(result, '发送成功'))
 }
 
@@ -68,7 +70,7 @@ export const reportMessage = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { reason } = req.body
 
-  const result = await chatService.reportMessage(userId!, Number(id), reason || '')
+  const result = await chatService.reportMessage(userId!, Number(id), sanitize(reason))
   return res.json(success(result, '举报提交成功，我们会尽快处理'))
 }
 
@@ -77,10 +79,11 @@ export const streamerReply = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { content, replyType = 'public' } = req.body
 
-  const error = validateMessage(content)
+  const sanitizedContent = sanitize(content)
+  const error = validateMessage(sanitizedContent)
   if (error) return res.json(fail(error, 400))
 
-  const result = await chatService.streamerReply(userId!, Number(id), content, replyType)
+  const result = await chatService.streamerReply(userId!, Number(id), sanitizedContent, replyType)
   return res.json(success(result, '回复成功'))
 }
 
@@ -89,10 +92,11 @@ export const privateReply = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { content } = req.body
 
-  const error = validateMessage(content)
+  const sanitizedContent = sanitize(content)
+  const error = validateMessage(sanitizedContent)
   if (error) return res.json(fail(error, 400))
 
-  const result = await chatService.privateReply(userId!, Number(id), content)
+  const result = await chatService.privateReply(userId!, Number(id), sanitizedContent)
   return res.json(success(result, '私密回复成功'))
 }
 

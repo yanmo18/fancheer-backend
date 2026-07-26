@@ -2,6 +2,87 @@
 
 ## 修改记录
 
+### 2026-07-26 - 修改问题2：BigInt/Number精度隐患
+
+**修改文件：**
+- [src/app.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/app.ts)
+
+**修改内容：**
+- 在应用入口添加 BigInt 的 JSON 序列化支持：
+  ```typescript
+  (BigInt.prototype as any).toJSON = function () { return this.toString() }
+  ```
+
+**修改原因：**
+- schema.prisma 中所有主键使用 BigInt @db.UnsignedBigInt
+- JavaScript 的 Number 安全整数上限是 2^53，大 ID 可能导致精度丢失
+- 之前代码中到处使用 Number(id) 转换，存在隐患
+
+**完成成就：**
+- ✅ 所有 BigInt 在 JSON.stringify 时自动转为字符串
+- ✅ 前端收到的 id 都是字符串类型，不会有精度问题
+- ✅ 无需修改任何 controller/service，一行代码全局解决
+
+---
+
+### 2026-07-26 - 修改问题4：缺XSS过滤 & 问题5：缺敏感词过滤
+
+**修改文件：**
+- [src/utils/sanitize.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/utils/sanitize.ts) (新建)
+- [src/utils/sensitiveWord.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/utils/sensitiveWord.ts) (新建)
+- [src/app.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/app.ts)
+- [src/controllers/user.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/user.controller.ts)
+- [src/controllers/banner.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/banner.controller.ts)
+- [src/controllers/streamer.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/streamer.controller.ts)
+- [src/controllers/awards.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/awards.controller.ts)
+- [src/controllers/songs.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/songs.controller.ts)
+- [src/controllers/activities.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/activities.controller.ts)
+- [src/controllers/chat.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/chat.controller.ts)
+- [src/controllers/admin.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/admin.controller.ts)
+
+**修改内容：**
+
+**问题4：XSS过滤**
+- 创建 `src/utils/sanitize.ts`，封装 `sanitize()` 和 `sanitizeObject()` 工具函数
+- 使用已安装的 `xss` 包对用户输入进行过滤
+- 在所有controller中对以下字段进行XSS过滤：title、content、nickname、bio、reason、linkUrl、name、tags、description、keyword、word
+
+**问题5：敏感词过滤**
+- 创建 `src/utils/sensitiveWord.ts`，封装 `loadSensitiveWords()` 和 `checkSensitiveWord()` 工具函数
+- 应用启动时从数据库加载敏感词到内存缓存
+- 在修改昵称接口中添加敏感词检查，包含敏感词时返回错误
+
+**修改原因：**
+- 接口文档要求修改昵称、新增Banner、编辑主播资料等接口需要进行XSS过滤
+- 接口文档2.1修改昵称明确要求查询sensitive_words表进行敏感词匹配
+- 之前代码中已安装xss包但未使用，敏感词过滤完全缺失
+
+**完成成就：**
+- ✅ 创建XSS过滤工具函数
+- ✅ 创建敏感词过滤工具函数（支持内存缓存）
+- ✅ 所有controller中添加XSS过滤
+- ✅ 修改昵称接口添加敏感词过滤
+- ✅ 应用启动时预加载敏感词到内存，提高性能
+
+---
+
+### 2026-07-26 - 项目名称统一："听潮阁"替换为"Fancheer"
+
+**修改文件：**
+- word目录下所有文档（04-Fancheer-接口文档.md、04-后端底层基建...md、02-PRD_Fancheer-ER图.drawio、01-Fancheer粉丝官网-PRD-V2.md、02-Fancheer-建表SQL.sql）
+- [README.md](file:///d:/Seren-item/Fancheer/fancheer-backend/README.md)
+
+**修改内容：**
+- 将所有文件中的"听潮阁"替换为"Fancheer"
+
+**修改原因：**
+- 项目名称统一为Fancheer，避免名称不一致
+
+**完成成就：**
+- ✅ 所有文档和文件中的"听潮阁"已替换为"Fancheer"
+
+---
+
 ### 2026-07-26 - 修改问题3：HTTP状态码不一致
 
 **修改文件：**
@@ -57,9 +138,9 @@
 ### 之前修改记录（接口文档与代码一致性优化）
 
 **修改文件：**
-- [word/04-听潮阁-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-听潮阁-接口文档.md)
+- [word/04-Fancheer-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-Fancheer-接口文档.md)
 - [word/04-后端底层基建、通用工具、中间件完整手册.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-后端底层基建、通用工具、中间件完整手册（归属 + 源码 + 作用全解）【对齐最新V1.1接口文档】.md)
-- [word/03-听潮后端脚手架搭建手册.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/03-听潮后端 fancheer-backend 脚手架完整从零搭建步骤+最终适配版.md)
+- [word/03-Fancheer后端脚手架搭建手册.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/03-Fancheer后端 fancheer-backend 脚手架完整从零搭建步骤+最终适配版.md)
 - [src/services/upload.service.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/services/upload.service.ts)
 - [src/controllers/upload.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/upload.controller.ts)
 - [src/routes/upload.route.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/routes/upload.route.ts)

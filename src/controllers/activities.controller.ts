@@ -7,6 +7,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import activitiesService from '../services/activities.service'
 
 export const getActivities = async (req: UserRequest, res: Response) => {
@@ -27,7 +28,14 @@ export const createActivity = async (req: UserRequest, res: Response) => {
   if (!title) return res.json(fail('活动标题不能为空', 400))
   if (!startTime) return res.json(fail('活动开始时间不能为空', 400))
 
-  const result = await activitiesService.createActivity({ title, description, coverUrl, startTime, endTime, sortOrder }, adminId!)
+  const result = await activitiesService.createActivity({ 
+    title: sanitize(title), 
+    description: sanitize(description), 
+    coverUrl, 
+    startTime, 
+    endTime, 
+    sortOrder 
+  }, adminId!)
   return res.json(success(result, '活动创建成功'))
 }
 
@@ -36,7 +44,14 @@ export const updateActivity = async (req: UserRequest, res: Response) => {
   const { title, description, coverUrl, startTime, endTime, sortOrder } = req.body
   const adminId = req.user?.id
 
-  await activitiesService.updateActivity(Number(id), { title, description, coverUrl, startTime, endTime, sortOrder }, adminId!)
+  await activitiesService.updateActivity(Number(id), { 
+    title: sanitize(title), 
+    description: sanitize(description), 
+    coverUrl, 
+    startTime, 
+    endTime, 
+    sortOrder 
+  }, adminId!)
   return res.json(success(null, '活动更新成功'))
 }
 

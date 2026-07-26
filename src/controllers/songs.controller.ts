@@ -8,6 +8,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import songsService from '../services/songs.service'
 
 export const getSongs = async (req: UserRequest, res: Response) => {
@@ -28,7 +29,13 @@ export const createSong = async (req: UserRequest, res: Response) => {
   if (!title) return res.json(fail('歌曲名称不能为空', 400))
   if (!audioUrl) return res.json(fail('音频URL不能为空', 400))
 
-  const result = await songsService.createSong({ title, artist, audioUrl, coverUrl, sortOrder }, adminId!)
+  const result = await songsService.createSong({ 
+    title: sanitize(title), 
+    artist: sanitize(artist), 
+    audioUrl, 
+    coverUrl, 
+    sortOrder 
+  }, adminId!)
   return res.json(success(result, '歌曲创建成功'))
 }
 
@@ -37,7 +44,13 @@ export const updateSong = async (req: UserRequest, res: Response) => {
   const { title, artist, audioUrl, coverUrl, sortOrder } = req.body
   const adminId = req.user?.id
 
-  await songsService.updateSong(Number(id), { title, artist, audioUrl, coverUrl, sortOrder }, adminId!)
+  await songsService.updateSong(Number(id), { 
+    title: sanitize(title), 
+    artist: sanitize(artist), 
+    audioUrl, 
+    coverUrl, 
+    sortOrder 
+  }, adminId!)
   return res.json(success(null, '歌曲更新成功'))
 }
 

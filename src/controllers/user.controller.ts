@@ -9,16 +9,23 @@ import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
 import { validateNickname } from '../utils/validate'
+import { sanitize } from '../utils/sanitize'
+import { checkSensitiveWord } from '../utils/sensitiveWord'
 import userService from '../services/user.service'
 
 export const updateNickname = async (req: UserRequest, res: Response) => {
   const userId = req.user?.id
   const { nickname } = req.body
 
-  const error = validateNickname(nickname)
+  const sanitizedNickname = sanitize(nickname)
+
+  const error = validateNickname(sanitizedNickname)
   if (error) return res.json(fail(error, 400))
 
-  const result = await userService.updateNickname(userId!, nickname)
+  const { hasSensitive, matchedWord } = checkSensitiveWord(sanitizedNickname)
+  if (hasSensitive) return res.json(fail(`昵称包含敏感词: ${matchedWord}`, 400))
+
+  const result = await userService.updateNickname(userId!, sanitizedNickname)
   return res.json(success(result, '昵称修改成功'))
 }
 

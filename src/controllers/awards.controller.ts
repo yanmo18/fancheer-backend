@@ -8,6 +8,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import awardsService from '../services/awards.service'
 
 export const getAwards = async (req: UserRequest, res: Response) => {
@@ -27,7 +28,13 @@ export const createAward = async (req: UserRequest, res: Response) => {
 
   if (!title) return res.json(fail('奖项名称不能为空', 400))
 
-  const result = await awardsService.createAward({ title, description, imageUrl, awardDate, sortOrder }, adminId!)
+  const result = await awardsService.createAward({ 
+    title: sanitize(title), 
+    description: sanitize(description), 
+    imageUrl, 
+    awardDate, 
+    sortOrder 
+  }, adminId!)
   return res.json(success(result, '获奖记录创建成功'))
 }
 
@@ -36,7 +43,13 @@ export const updateAward = async (req: UserRequest, res: Response) => {
   const { title, description, imageUrl, awardDate, sortOrder } = req.body
   const adminId = req.user?.id
 
-  await awardsService.updateAward(Number(id), { title, description, imageUrl, awardDate, sortOrder }, adminId!)
+  await awardsService.updateAward(Number(id), { 
+    title: sanitize(title), 
+    description: sanitize(description), 
+    imageUrl, 
+    awardDate, 
+    sortOrder 
+  }, adminId!)
   return res.json(success(null, '获奖记录更新成功'))
 }
 

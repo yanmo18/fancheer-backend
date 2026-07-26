@@ -8,6 +8,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import bannerService from '../services/banner.service'
 
 export const getBanners = async (req: UserRequest, res: Response) => {
@@ -27,7 +28,13 @@ export const createBanner = async (req: UserRequest, res: Response) => {
 
   if (!imageUrl) return res.json(fail('图片URL不能为空', 400))
 
-  const result = await bannerService.createBanner({ title, imageUrl, linkUrl, sortOrder, isVisible }, adminId!)
+  const result = await bannerService.createBanner({ 
+    title: sanitize(title), 
+    imageUrl, 
+    linkUrl: sanitize(linkUrl), 
+    sortOrder, 
+    isVisible 
+  }, adminId!)
   return res.json(success(result, 'Banner创建成功'))
 }
 
@@ -36,7 +43,13 @@ export const updateBanner = async (req: UserRequest, res: Response) => {
   const { title, imageUrl, linkUrl, sortOrder, isVisible } = req.body
   const adminId = req.user?.id
 
-  await bannerService.updateBanner(Number(id), { title, imageUrl, linkUrl, sortOrder, isVisible }, adminId!)
+  await bannerService.updateBanner(Number(id), { 
+    title: sanitize(title), 
+    imageUrl, 
+    linkUrl: sanitize(linkUrl), 
+    sortOrder, 
+    isVisible 
+  }, adminId!)
   return res.json(success(null, 'Banner更新成功'))
 }
 
