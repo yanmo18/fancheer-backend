@@ -4,12 +4,13 @@
  * 作用：定义聊天室相关接口路由（发送消息/获取消息/点赞/私密消息）
  * 
  * 接口列表：
- *   GET  /api/messages/public    - 获取公开消息列表（轮询用）
- *   GET  /api/messages/private   - 获取我的私密消息列表
- *   POST /api/messages           - 发送消息（公开/私密）
- *   POST /api/messages/:id/like  - 点赞消息
- *   DELETE /api/messages/:id/like - 取消点赞
- *   POST /api/messages/:id/report - 举报消息
+ *   GET  /api/messages/public       - 获取公开消息列表（轮询用）
+ *   GET  /api/messages/public-replies - 获取主播公开回复列表（全员可见，匿名展示）
+ *   GET  /api/messages/private      - 获取我的私密消息列表（仅粉丝）
+ *   POST /api/messages              - 发送消息（公开/私密）
+ *   POST /api/messages/:id/like     - 点赞消息
+ *   DELETE /api/messages/:id/like   - 取消点赞
+ *   POST /api/messages/:id/report   - 举报消息
  *   POST /api/messages/:id/streamer-reply - 主播发送公开回复
  *   POST /api/messages/:id/private-reply - 主播发送私密回复
  *   GET  /api/messages/:id/private-replies - 获取某消息的回复列表

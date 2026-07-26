@@ -251,6 +251,44 @@ npm run build
 
 ## 📝 修改日志
 
+### 2026-07-27 - 权限配置全面检查 & 接口文档完善
+
+**修改文件：**
+- [word/04-听潮阁-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-听潮阁-接口文档.md)
+- [src/routes/chat.route.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/routes/chat.route.ts)
+
+**修改内容：**
+
+**权限配置检查结果（全部正确）：**
+
+| 角色 | 可访问接口 | 权限配置 | 状态 |
+|------|-----------|---------|------|
+| 游客 | `/api/banners`, `/api/streamer-info`, `/api/awards`, `/api/songs`, `/api/activities`, `/api/gallery`, `/api/graph`, `/api/auth/captcha`, `/api/auth/register`, `/api/auth/login` | 无登录要求 | ✅ |
+| 注册粉丝 | 游客全部 + `/api/user/*`, `/api/checkin/*`, `/api/messages/*`（除主播专用） | `authMiddleware` | ✅ |
+| 管理员 | 粉丝全部 + `/api/admin/*`, `/api/upload/*` | `authMiddleware + requireRole(['admin', 'streamer'])` | ✅ |
+| 主播 | 管理员全部 + `/api/messages/:id/streamer-reply`, `/api/messages/:id/private-reply` | `authMiddleware + requireRole(['streamer'])` | ✅ |
+
+**特殊权限验证：**
+- ✅ 管理员无法查看私密消息（`/api/admin/messages/private` 仅 streamer 可访问）
+- ✅ 私密回复默认公开展示（`is_public: true`），全员可见但隐藏发送者身份
+- ✅ 聊天室所有接口需要登录（游客无法进入）
+
+**文档更新：**
+1. **新增接口文档 `10.2 获取主播公开回复列表（全员可见）`**：补充 `/api/messages/public-replies` 接口定义，描述主播私密回复的匿名公开展示机制
+2. **调整接口编号**：因新增接口，原10.2-11.3编号调整为10.3-11.4
+
+**修改原因：**
+- 接口文档缺少 `/api/messages/public-replies` 的定义，但代码已实现
+- 需要确保文档与代码完全一致，前端开发有明确的接口规范
+
+**完成成就：**
+- ✅ 所有路由权限配置正确，符合PRD角色矩阵
+- ✅ 私密消息权限逻辑正确（主播可见，管理员不可见，回复全员可见）
+- ✅ 接口文档与代码完全一致
+- ✅ TypeScript编译测试通过
+
+---
+
 ### 2026-07-27 - 文档与代码一致性检查 & 冗余清理
 
 **修改文件：**
