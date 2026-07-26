@@ -158,31 +158,29 @@ export const getPrivateMessages = async (userId: number, page: number, pageSize:
   const skip = (page - 1) * pageSize
 
   const [list, total] = await Promise.all([
-    prisma.messages.findMany({
-      where: { type: 'private', sender_id: userId },
+    prisma.private_replies.findMany({
+      where: { target_user_id: userId, is_public: true },
       skip,
       take: pageSize,
       orderBy: { created_at: 'desc' },
-      select: {
-        id: true,
-        sender_id: true,
-        content: true,
-        type: true,
-        like_count: true,
-        created_at: true
+      include: {
+        messages: { select: { content: true } },
+        users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatar_id: true, avatars: true } }
       }
     }),
-    prisma.messages.count({ where: { type: 'private', sender_id: userId } })
+    prisma.private_replies.count({ where: { target_user_id: userId, is_public: true } })
   ])
 
   return {
-    list: list.map(msg => ({
-      id: msg.id,
-      senderId: msg.sender_id,
-      content: msg.content,
-      type: msg.type,
-      likeCount: msg.like_count,
-      createdAt: msg.created_at
+    list: list.map(reply => ({
+      id: reply.id,
+      messageId: reply.message_id,
+      originalContent: reply.messages?.content || '',
+      streamerId: reply.streamer_id,
+      streamerNickname: reply.users_private_replies_streamer_idTousers?.nickname || '',
+      streamerAvatar: reply.users_private_replies_streamer_idTousers?.avatars?.url || '',
+      content: reply.content,
+      createdAt: reply.created_at
     })),
     pagination: {
       page,
@@ -279,9 +277,10 @@ export const privateReply = async (userId: number, messageId: number, content: s
       message_id: messageId,
       streamer_id: userId,
       target_user_id: message.sender_id,
-      content
+      content,
+      is_public: true
     },
-    select: { id: true, message_id: true, streamer_id: true, target_user_id: true, content: true, created_at: true }
+    select: { id: true, message_id: true, streamer_id: true, target_user_id: true, content: true, is_public: true, created_at: true }
   })
 
   await prisma.admin_logs.create({
@@ -300,6 +299,7 @@ export const privateReply = async (userId: number, messageId: number, content: s
     streamerId: reply.streamer_id,
     targetUserId: reply.target_user_id,
     content: reply.content,
+    isPublic: reply.is_public,
     createdAt: reply.created_at
   }
 }

@@ -2,6 +2,45 @@
 
 ## 修改记录
 
+### 2026-07-26 - 修改私密消息功能：主播私密回复全员可见（匿名展示）
+
+**修改文件：**
+- [prisma/schema.prisma](file:///d:/Seren-item/Fancheer/fancheer-backend/prisma/schema.prisma)
+- [src/services/chat.service.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/services/chat.service.ts)
+- [src/controllers/chat.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/chat.controller.ts)
+- [word/01-听潮阁粉丝官网-PRD-V2.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/01-听潮阁粉丝官网-PRD-V2.md)
+- [word/04-听潮阁-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-听潮阁-接口文档.md)
+- [word/04-后端底层基建、通用工具、中间件完整手册...md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-后端底层基建、通用工具、中间件完整手册（归属 + 源码 + 作用全解）【对齐最新V1.1接口文档】.md)
+
+**修改内容：**
+
+**数据库变更：**
+- private_replies 表新增 `is_public` 字段（Boolean，默认false）
+- 数据库执行：`ALTER TABLE private_replies ADD COLUMN is_public TINYINT(1) DEFAULT 0;`
+
+**业务逻辑变更：**
+1. **接口11.2（主播私密回复）**：默认 `is_public = true`，回复公开展示
+2. **接口10.2（粉丝获取私密消息）**：改为查询 `private_replies WHERE target_user_id = 当前用户 AND is_public = 1`，返回主播对自己的公开回复（匿名版）
+3. **接口2.4（获取主播对我的私密回复）**：与10.2合并，已废弃
+
+**返回数据变更：**
+- 粉丝获取私密消息接口新增：`messageId`、`originalContent`（匿名原消息）、`streamerId`、`streamerNickname`、`streamerAvatar`
+- 不再返回发送者（粉丝）身份信息
+
+**修改原因：**
+- 原设计：私密回复仅 target_user + streamer 可见
+- 新设计：主播私密回复全员可见（匿名展示原消息内容，隐藏发送者身份）
+- 满足"粉丝发私密消息→只有主播能看到，主播公开回复→全体粉丝可见"的产品需求
+
+**完成成就：**
+- ✅ 数据库新增 is_public 字段
+- ✅ 主播私密回复默认公开
+- ✅ 粉丝获取私密消息改为获取主播对自己的公开回复（匿名版）
+- ✅ 原消息内容匿名展示，保护粉丝隐私
+- ✅ PRD文档、接口文档、后端基建文档同步更新
+
+---
+
 ### 2026-07-26 - 修改问题2：BigInt/Number精度隐患
 
 **修改文件：**
