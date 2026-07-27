@@ -7,6 +7,7 @@
  *   GET  /api/admin/users          - 获取用户列表（需要登录，admin/streamer）
  *   PUT  /api/admin/users/:id/ban  - 封禁用户（需要登录，admin/streamer）
  *   PUT  /api/admin/users/:id/unban - 解封用户（需要登录，admin/streamer）
+ *   PUT  /api/admin/users/:id/role - 设置/取消管理员（需要登录，仅streamer）
  *   GET  /api/admin/messages/public - 获取全部公开消息（需要登录，admin/streamer）
  *   GET  /api/admin/messages/private - 获取全部私密消息（需要登录，仅streamer）
  *   DELETE /api/admin/messages/:id - 删除消息（需要登录，admin/streamer）
@@ -26,6 +27,7 @@ import {
   getUsers, 
   banUser, 
   unbanUser, 
+  updateUserRole,
   getLogs,
   getPublicMessages,
   getPrivateMessages,
@@ -43,6 +45,7 @@ const router = Router()
 router.get('/admin/users', authMiddleware, requireRole(['admin', 'streamer']), getUsers)
 router.put('/admin/users/:id/ban', authMiddleware, requireRole(['admin', 'streamer']), banUser)
 router.put('/admin/users/:id/unban', authMiddleware, requireRole(['admin', 'streamer']), unbanUser)
+router.put('/admin/users/:id/role', authMiddleware, requireRole(['streamer']), updateUserRole)
 
 router.get('/admin/messages/public', authMiddleware, requireRole(['admin', 'streamer']), getPublicMessages)
 router.get('/admin/messages/private', authMiddleware, requireRole(['streamer']), getPrivateMessages)

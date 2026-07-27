@@ -251,6 +251,44 @@ npm run build
 
 ## 📝 修改日志
 
+### 2026-07-27 - 新增管理员设置功能
+
+**修改文件：**
+- [src/services/admin.service.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/services/admin.service.ts)
+- [src/controllers/admin.controller.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/controllers/admin.controller.ts)
+- [src/routes/admin.route.ts](file:///d:/Seren-item/Fancheer/fancheer-backend/src/routes/admin.route.ts)
+- [word/04-听潮阁-接口文档.md](file:///d:/Seren-item/Fancheer/fancheer-backend/word/04-听潮阁-接口文档.md)
+
+**修改内容：**
+
+**新增接口 `PUT /api/admin/users/:id/role`**：
+- **功能**：主播可以将粉丝设为管理员，或取消管理员权限
+- **权限**：仅 streamer（主播）可调用
+- **参数**：`id`（目标用户ID）、`role`（目标角色，仅允许 `admin` 或 `fan`）
+
+**业务逻辑：**
+1. 校验 `role` 参数值，仅允许 `"admin"` 或 `"fan"`
+2. 校验目标用户存在
+3. 校验不能修改 `streamer` 角色的用户
+4. 校验不能修改自己的角色
+5. 幂等检查：目标角色与当前角色相同时直接返回成功
+6. 更新 `users.role` 字段
+7. 写入 `admin_logs`（action: `promote_admin` 或 `demote_admin`）
+
+**修改原因：**
+- 之前管理员只能由数据库手动修改，无法通过后台界面操作
+- 主播需要灵活地授权/撤销信任粉丝的管理权限
+
+**完成成就：**
+- ✅ 新增管理员设置接口实现
+- ✅ 完整的权限校验（仅主播可操作，不能修改主播角色，不能修改自己）
+- ✅ 幂等操作支持
+- ✅ 操作日志记录
+- ✅ 接口文档更新
+- ✅ TypeScript编译测试通过
+
+---
+
 ### 2026-07-27 - 权限配置全面检查 & 接口文档完善
 
 **修改文件：**

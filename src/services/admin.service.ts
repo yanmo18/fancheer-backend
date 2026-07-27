@@ -375,10 +375,65 @@ export const getLogs = async (page: number, pageSize: number) => {
   }
 }
 
+export const updateUserRole = async (targetUserId: bigint, newRole: string, operatorId: bigint) => {
+  const targetUser = await prisma.users.findUnique({
+    where: { id: targetUserId },
+    select: { id: true, username: true, role: true }
+  })
+
+  if (!targetUser) {
+    throw new AppError('目标用户不存在', 404)
+  }
+
+  if (targetUser.role === 'streamer') {
+    throw new AppError('不能修改主播的角色', 403)
+  }
+
+  if (targetUserId === operatorId) {
+    throw new AppError('不能修改自己的角色', 403)
+  }
+
+  if (targetUser.role === newRole) {
+    return {
+      userId: targetUser.id.toString(),
+      username: targetUser.username,
+      role: targetUser.role
+    }
+  }
+
+  const updatedUser = await prisma.users.update({
+    where: { id: targetUserId },
+    data: { role: newRole as 'fan' | 'admin' },
+    select: { id: true, username: true, role: true }
+  })
+
+  const action = newRole === 'admin' ? 'promote_admin' : 'demote_admin'
+  const detail = newRole === 'admin'
+    ? `将用户 ${targetUser.username} 设为管理员`
+    : `取消用户 ${targetUser.username} 的管理员权限`
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: operatorId,
+      action,
+      target_type: 'user',
+      target_id: targetUserId,
+      detail
+    }
+  })
+
+  return {
+    userId: updatedUser.id.toString(),
+    username: updatedUser.username,
+    role: updatedUser.role
+  }
+}
+
 export default {
   getUsers,
   banUser,
   unbanUser,
+  updateUserRole,
   getPublicMessages,
   getPrivateMessages,
   deleteMessage,

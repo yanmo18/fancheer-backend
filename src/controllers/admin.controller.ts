@@ -106,3 +106,20 @@ export const getLogs = async (req: UserRequest, res: Response) => {
   const result = await adminService.getLogs(Number(page), Number(pageSize))
   return res.json(success(result))
 }
+
+export const updateUserRole = async (req: UserRequest, res: Response) => {
+  const id = String(req.params.id)
+  const role = String(req.body.role)
+  const adminId = BigInt(req.user?.id!)
+
+  if (!id || !/^\d+$/.test(id)) {
+    return res.json(fail('用户 ID 格式无效', 400))
+  }
+
+  if (!role || !['admin', 'fan'].includes(role)) {
+    return res.json(fail('role 参数无效，仅允许 admin 或 fan', 400))
+  }
+
+  const result = await adminService.updateUserRole(BigInt(id), sanitize(role), adminId)
+  return res.json(success(result, 'success'))
+}
