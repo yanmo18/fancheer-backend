@@ -126,9 +126,10 @@ npm run build
 
 | 角色 | 说明 | 权限范围 |
 |------|------|----------|
-| admin | 管理员 | 全部功能，管理后台 |
-| streamer | 主播 | 聊天室、私密回复、上传音乐 |
-| fan | 粉丝 | 聊天室、发送消息、点赞、打卡 |
+| 游客 | 未登录用户 | 仅可浏览首页内容（Banner、主播资料、获奖记录、图集、活动日历、音乐、关系图谱） |
+| fan | 注册粉丝 | 首页浏览 + 个人中心（修改昵称、头像、每日打卡） + 聊天室（公开聊天、点赞、举报、发送私密消息） |
+| admin | 管理员 | 粉丝全部权限 + 管理后台（用户管理、内容管理、举报处理、敏感词管理、头像池管理、操作日志），**不可查看私密消息** |
+| streamer | 主播 | 管理员全部权限 + 查看所有私密消息并回复，**可设置/取消管理员** |
 
 ## 📡 API 接口
 
@@ -139,55 +140,94 @@ npm run build
 | `/api/auth/captcha` | GET | 获取图形验证码 |
 | `/api/auth/register` | POST | 用户注册 |
 | `/api/auth/login` | POST | 用户登录 |
-| `/api/auth/logout` | POST | 用户登出 |
+| `/api/auth/logout` | POST | 用户登出（需要登录） |
+| `/api/auth/me` | GET | 获取当前用户信息（需要登录） |
 
 ### 用户模块
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/users/profile` | GET | 获取用户信息 |
-| `/api/users/profile` | PUT | 修改用户昵称 |
-| `/api/users/avatar` | POST | 修改头像 |
+| `/api/user/nickname` | PUT | 修改展示昵称（需要登录） |
+| `/api/user/avatar` | PUT | 选择系统头像（需要登录） |
+| `/api/user/avatars` | GET | 获取系统头像池（需要登录） |
 
-### 聊天室模块
+### 首页展示模块（游客可访问）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/messages/public` | GET | 获取公开消息 |
-| `/api/messages/public-replies` | GET | 获取主播公开回复 |
-| `/api/messages/private` | GET | 获取私密消息 |
-| `/api/messages` | POST | 发送消息 |
+| `/api/banners` | GET | 获取Banner列表 |
+| `/api/streamer-info` | GET | 获取主播资料 |
+| `/api/awards` | GET | 获取获奖记录列表 |
+| `/api/songs` | GET | 获取音乐作品列表 |
+| `/api/activities` | GET | 获取活动日历列表 |
+| `/api/gallery` | GET | 获取图集列表 |
+| `/api/graph` | GET | 获取关系图谱 |
+
+### 聊天室模块（需要登录）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/messages/public` | GET | 获取公开消息列表 |
+| `/api/messages/public-replies` | GET | 获取主播公开回复（全员可见） |
+| `/api/messages/private` | GET | 获取我的私密消息（仅粉丝） |
+| `/api/messages` | POST | 发送消息（公开/私密） |
 | `/api/messages/:id/like` | POST | 点赞消息 |
 | `/api/messages/:id/like` | DELETE | 取消点赞 |
 | `/api/messages/:id/report` | POST | 举报消息 |
-| `/api/messages/:id/streamer-reply` | POST | 主播公开回复 |
-| `/api/messages/:id/private-reply` | POST | 主播私密回复 |
+| `/api/messages/:id/streamer-reply` | POST | 主播发送公开回复（仅主播） |
+| `/api/messages/:id/private-reply` | POST | 主播发送私密回复（仅主播） |
+| `/api/messages/:id/private-replies` | GET | 获取某消息的回复列表 |
 
-### 管理后台模块
+### 打卡模块（需要登录）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/api/admin/banners` | GET/POST | Banner管理 |
-| `/api/admin/banners/:id` | PUT/DELETE | Banner详情/删除 |
-| `/api/admin/streamer-info` | GET/PUT | 主播资料管理 |
-| `/api/admin/awards` | GET/POST | 获奖记录管理 |
-| `/api/admin/songs` | GET/POST | 音乐作品管理 |
-| `/api/admin/activities` | GET/POST | 活动管理 |
-| `/api/admin/gallery` | GET/POST | 图集管理 |
+| `/api/checkin` | POST | 每日打卡 |
+| `/api/checkin/calendar` | GET | 获取打卡日历 |
 
-### 上传模块
+### 管理后台模块（需要登录，admin/streamer）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/admin/users` | GET | 获取用户列表 |
+| `/api/admin/users/:id/ban` | PUT | 封禁用户 |
+| `/api/admin/users/:id/unban` | PUT | 解封用户 |
+| `/api/admin/users/:id/role` | PUT | 设置/取消管理员（仅主播） |
+| `/api/admin/banners` | GET/POST | Banner列表/新增 |
+| `/api/admin/banners/:id` | PUT/DELETE | Banner编辑/删除 |
+| `/api/admin/streamer-info` | GET/PUT | 主播资料查看/编辑 |
+| `/api/admin/awards` | GET/POST | 获奖记录列表/新增 |
+| `/api/admin/awards/:id` | PUT/DELETE | 获奖记录编辑/删除 |
+| `/api/admin/songs` | GET/POST | 音乐作品列表/新增 |
+| `/api/admin/songs/:id` | PUT/DELETE | 音乐作品编辑/删除 |
+| `/api/admin/activities` | GET/POST | 活动列表/新增 |
+| `/api/admin/activities/:id` | PUT/DELETE | 活动编辑/删除 |
+| `/api/admin/gallery` | GET/POST | 图集列表/新增 |
+| `/api/admin/gallery/:id` | PUT/DELETE | 图集编辑/删除 |
+| `/api/admin/graph/characters` | GET/POST | 图谱人物列表/新增 |
+| `/api/admin/graph/characters/:id` | PUT/DELETE | 图谱人物编辑/删除 |
+| `/api/admin/graph/relations` | GET/POST | 关系连线列表/新增 |
+| `/api/admin/graph/relations/:id` | PUT/DELETE | 关系连线编辑/删除 |
+| `/api/admin/messages/public` | GET | 获取全部公开消息 |
+| `/api/admin/messages/private` | GET | 获取全部私密消息（仅主播） |
+| `/api/admin/messages/:id` | DELETE | 删除消息 |
+| `/api/admin/reports/pending` | GET | 获取待处理举报工单 |
+| `/api/admin/reports/resolved` | GET | 获取已办结举报工单 |
+| `/api/admin/reports/:id` | GET | 查看举报工单详情 |
+| `/api/admin/reports/:id/resolve` | PUT | 标记举报工单为办结 |
+| `/api/admin/reports/:id/message` | DELETE | 删除被举报的违规消息 |
+| `/api/admin/avatars` | GET/POST | 头像池列表/新增 |
+| `/api/admin/avatars/:id` | DELETE | 删除头像 |
+| `/api/admin/sensitive-words` | GET/POST | 敏感词列表/新增 |
+| `/api/admin/sensitive-words/:id` | DELETE | 删除敏感词 |
+| `/api/admin/logs` | GET | 获取操作日志 |
+
+### 上传模块（需要登录，admin/streamer）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/upload/image` | POST | 上传图片 |
 | `/api/upload/audio` | POST | 上传音频 |
-
-### 其他模块
-
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| `/api/checkin` | POST | 每日打卡 |
-| `/api/checkin/history` | GET | 打卡历史 |
 
 ## 🗄️ 数据库设计
 
