@@ -1,6 +1,8 @@
 # API 接口约定
 
 > Fancheer Backend 前后端对接规范与接口速查表。
+>
+> **项目定位**：博主个人展示站（单一创作者）。代码中 `streamer` 角色 = 博主/站主，`streamer_info` = 博主资料。不做直播、打赏、电商。
 
 ## 基础信息
 
@@ -209,7 +211,7 @@ http://localhost:3000/uploads/<category>/<filename>
     "user": {
       "id": "1",
       "username": "fan001",
-      "nickname": "忠实粉丝",
+      "nickname": "访客小明",
       "role": "fan",
       "avatarUrl": null
     }
@@ -230,7 +232,7 @@ http://localhost:3000/uploads/<category>/<filename>
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/banners` | GET | 获取 Banner 列表 |
-| `/api/streamer-info` | GET | 获取主播资料 |
+| `/api/streamer-info` | GET | 获取博主资料 |
 | `/api/awards` | GET | 获取获奖记录列表 |
 | `/api/songs` | GET | 获取音乐作品列表 |
 | `/api/activities` | GET | 获取活动日历列表 |
@@ -242,14 +244,14 @@ http://localhost:3000/uploads/<category>/<filename>
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/messages/public` | GET | 获取公开消息列表 |
-| `/api/messages/public-replies` | GET | 获取主播公开回复（全员可见） |
+| `/api/messages/public-replies` | GET | 获取博主公开回复（全员可见） |
 | `/api/messages/private` | GET | 获取我的私密消息（仅粉丝） |
 | `/api/messages` | POST | 发送消息（公开/私密） |
 | `/api/messages/:id/like` | POST | 点赞消息 |
 | `/api/messages/:id/like` | DELETE | 取消点赞 |
 | `/api/messages/:id/report` | POST | 举报消息 |
-| `/api/messages/:id/streamer-reply` | POST | 主播发送公开回复（仅主播） |
-| `/api/messages/:id/private-reply` | POST | 主播发送私密回复（仅主播） |
+| `/api/messages/:id/streamer-reply` | POST | 博主发送公开回复（仅 streamer 角色） |
+| `/api/messages/:id/private-reply` | POST | 博主发送私密回复（仅 streamer 角色） |
 | `/api/messages/:id/private-replies` | GET | 获取某消息的回复列表 |
 
 #### 发送消息请求体
@@ -261,7 +263,7 @@ http://localhost:3000/uploads/<category>/<filename>
 }
 ```
 
-`type` 可选值：`public`（公开）| `private`（私密，仅主播可见）
+`type` 可选值：`public`（公开留言）| `private`（私密留言，仅博主可见）
 
 ### 打卡模块（需要登录）
 
@@ -277,10 +279,10 @@ http://localhost:3000/uploads/<category>/<filename>
 | `/api/admin/users` | GET | 获取用户列表 |
 | `/api/admin/users/:id/ban` | PUT | 封禁用户 |
 | `/api/admin/users/:id/unban` | PUT | 解封用户 |
-| `/api/admin/users/:id/role` | PUT | 设置/取消管理员（仅主播） |
+| `/api/admin/users/:id/role` | PUT | 设置/取消协管员（仅 streamer 角色） |
 | `/api/admin/banners` | GET/POST | Banner 列表/新增 |
 | `/api/admin/banners/:id` | PUT/DELETE | Banner 编辑/删除 |
-| `/api/admin/streamer-info` | GET/PUT | 主播资料查看/编辑 |
+| `/api/admin/streamer-info` | GET/PUT | 博主资料查看/编辑 |
 | `/api/admin/awards` | GET/POST | 获奖记录列表/新增 |
 | `/api/admin/awards/:id` | PUT/DELETE | 获奖记录编辑/删除 |
 | `/api/admin/songs` | GET/POST | 音乐作品列表/新增 |
@@ -294,7 +296,7 @@ http://localhost:3000/uploads/<category>/<filename>
 | `/api/admin/graph/relations` | GET/POST | 关系连线列表/新增 |
 | `/api/admin/graph/relations/:id` | PUT/DELETE | 关系连线编辑/删除 |
 | `/api/admin/messages/public` | GET | 获取全部公开消息 |
-| `/api/admin/messages/private` | GET | 获取全部私密消息（仅主播） |
+| `/api/admin/messages/private` | GET | 获取全部私密留言（仅 streamer 角色） |
 | `/api/admin/messages/:id` | DELETE | 删除消息 |
 | `/api/admin/reports/pending` | GET | 获取待处理举报工单 |
 | `/api/admin/reports/resolved` | GET | 获取已办结举报工单 |

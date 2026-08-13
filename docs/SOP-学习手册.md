@@ -19,7 +19,7 @@
 | Day 2 | 请求生命周期 | §2–§4 | Postman 走一遍 login 全流程 |
 | Day 3 | 认证与权限 | §5 | 用 fan/admin/streamer 分别调 admin 接口 |
 | Day 4 | 数据库与 Prisma | §6 + [数据库指南](./数据库指南.md) | prisma:studio 查看表，改一条 banner |
-| Day 5 | 聊天室模块 | §4（chat 为例） | 发公开/私密消息，点赞，举报 |
+| Day 5 | 留言互动模块 | §4（chat 为例） | 发公开/私密留言，点赞，举报 |
 | Day 6 | 管理后台 CRUD | §11 + banner 源码 | 走一遍 Banner 增删改查 |
 | Day 7 | 安全与基建 | §7–§9 | 触发限流和敏感词拦截 |
 
@@ -29,14 +29,16 @@
 
 ### 业务场景
 
-Fancheer 是一个**主播粉丝互动平台**的后端 API，支撑以下前端功能：
+Fancheer 是一个**博主个人展示站**的后端 API —— 为单一创作者提供个人主页与轻量互动，**不是**直播平台或多主播社区。
 
 | 模块 | 用户可见功能 |
 |------|-------------|
-| 首页展示 | Banner 轮播、主播资料、获奖记录、音乐、活动、图集、关系图谱 |
+| 首页展示 | Banner、博主资料、荣誉记录、音乐、活动、图集、关系图谱 |
 | 用户中心 | 注册/登录、修改昵称、选择头像、每日打卡 |
-| 聊天室 | 公开聊天、私密消息、点赞、举报、主播回复 |
+| 留言互动 | 公开留言、私密留言、点赞、举报、博主回复 |
 | 管理后台 | 用户管理、内容 CRUD、举报处理、敏感词、操作日志 |
+
+**不开发**：多主播、直播推流、打赏、电商。详见 [项目定位与范围](./项目定位与范围.md)。
 
 ### 模块地图
 
@@ -45,13 +47,13 @@ fancheer-backend/
 ├── auth        认证（验证码、注册、登录、JWT）
 ├── user        用户资料（昵称、头像）
 ├── banner      首页轮播
-├── streamer    主播资料
+├── streamer    博主资料（代码名 streamer_info）
 ├── awards      获奖记录
 ├── songs       音乐作品
 ├── activities  活动日历
 ├── gallery     图集（二次元/三次元）
 ├── graph       关系图谱
-├── chat        聊天室（消息、点赞、举报、回复）
+├── chat        留言互动（消息、点赞、举报、回复）
 ├── checkin     每日打卡
 ├── reports     举报工单
 ├── admin       管理后台
@@ -61,11 +63,11 @@ fancheer-backend/
 
 ### 三种角色
 
-| 角色 | 英文标识 | 权限 |
+| 角色 | 代码标识 | 权限 |
 |------|----------|------|
-| 粉丝 | fan | 浏览 + 聊天 + 打卡 + 个人中心 |
-| 管理员 | admin | 粉丝权限 + 管理后台 + 上传 |
-| 主播 | streamer | 管理员权限 + 查看私密消息 + 设置管理员 |
+| 注册访客 | fan | 浏览 + 留言 + 打卡 + 个人中心 |
+| 协管员 | admin | 访客权限 + 管理后台 + 上传 |
+| 博主/站主 | streamer | 协管员权限 + 查看私密留言 + 设置协管员 |
 
 ---
 
@@ -228,7 +230,7 @@ Payload 包含：
 | 上传文件 | ❌ | ✅ | ✅ | ❌ |
 | 查看全部私密消息 | ❌ | ❌ | ✅ | ❌ |
 | 设置管理员 | ❌ | ❌ | ✅ | ❌ |
-| 主播回复 | ❌ | ❌ | ✅ | ❌ |
+| 博主回复 | ❌ | ❌ | ✅ | ❌ |
 
 ---
 
@@ -382,7 +384,7 @@ curl -X POST http://localhost:3000/api/messages \
 curl -X POST http://localhost:3000/api/messages \
   -H "Authorization: Bearer 你的token" \
   -H "Content-Type: application/json" \
-  -d '{"content": "主播加油！", "type": "private"}'
+  -d '{"content": "博主加油！", "type": "private"}'
 ```
 
 ### 实验 8：admin 封禁用户
@@ -394,7 +396,7 @@ curl -X PUT http://localhost:3000/api/admin/users/3/ban \
   -H "Authorization: Bearer admin的token"
 ```
 
-### 实验 9：streamer 回复私密消息
+### 实验 9：博主（streamer 账号）回复私密留言
 
 先用 streamer 登录，获取私密消息 ID 后：
 
@@ -480,5 +482,5 @@ A: 早期本地文档目录（已 gitignore）。现在统一使用 `docs/` 目�
 | [SOP 开发流程](./SOP-开发流程.md) | 日常开发标准流程 |
 | [API 接口约定](./API-接口约定.md) | 前后端对接规范 |
 | [数据库指南](./数据库指南.md) | Schema、迁移、Seed |
-| [CHANGELOG](./CHANGELOG.md) | 历史变更记录 |
+| [项目定位与范围](./项目定位与范围.md) | 产品边界与不开发功能 |
 | [项目 README](../README.md) | 项目入口与快速开始 |
