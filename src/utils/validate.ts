@@ -1,27 +1,18 @@
 /**
  * 参数校验工具函数
- * 
- * 作用：统一管理正则表达式和错误提示，避免重复代码
- *       所有校验函数返回 null 表示校验通过，返回字符串表示错误信息
- * 
- * 使用方式：
- *   import { validateUsername, validatePassword } from '../utils/validate'
- *   const error = validateUsername(username)
- *   if (error) return res.json(fail(error, 400))
  */
 
-const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]{2,49}$/
-const PASSWORD_REGEX = /^.{6,20}$/
+import { REGEX } from '../config/constants'
 
 export const validateUsername = (username: string): string | null => {
   if (!username) return '用户名不能为空'
-  if (!USERNAME_REGEX.test(username)) return '用户名格式错误（字母开头，3-50字符，仅含字母数字下划线）'
+  if (!REGEX.USERNAME.test(username)) return '用户名格式错误（字母开头，3-50字符，仅含字母数字下划线）'
   return null
 }
 
 export const validatePassword = (password: string): string | null => {
   if (!password) return '密码不能为空'
-  if (!PASSWORD_REGEX.test(password)) return '密码格式错误（6-20字符）'
+  if (!REGEX.PASSWORD.test(password)) return '密码格式错误（6-20字符）'
   return null
 }
 
@@ -34,5 +25,11 @@ export const validateNickname = (nickname: string): string | null => {
 export const validateMessage = (content: string): string | null => {
   if (!content) return '消息内容不能为空'
   if (content.length > 500) return '消息长度不能超过500个字符'
+  return null
+}
+
+export const validateYearMonth = (year: number, month: number): string | null => {
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return '年份参数无效'
+  if (!Number.isInteger(month) || month < 1 || month > 12) return '月份参数无效'
   return null
 }

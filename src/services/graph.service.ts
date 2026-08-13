@@ -1,8 +1,5 @@
 /**
  * 关系图谱服务
- * 
- * 作用：实现关系图谱相关业务逻辑（人物/连线）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -37,13 +34,15 @@ export const getGraph = async () => {
       name: char.name,
       avatarUrl: char.avatar_url || '',
       bio: char.bio || '',
-      isCenter: char.is_center
+      isCenter: char.is_center,
+      sortOrder: char.sort_order
     })),
     relations: relations.map(rel => ({
       id: rel.id,
       fromCharacterId: rel.from_character_id,
       toCharacterId: rel.to_character_id,
-      relationLabel: rel.relation_label || ''
+      relationLabel: rel.relation_label || '',
+      sortOrder: rel.sort_order
     }))
   }
 }
@@ -53,18 +52,22 @@ export const getAdminCharacters = async (page: number, pageSize: number) => {
   const [list, total] = await Promise.all([
     prisma.graph_characters.findMany({
       skip,
-      take: pageSize
+      take: pageSize,
+      orderBy: { sort_order: 'desc' }
     }),
     prisma.graph_characters.count()
   ])
 
   return {
     list: list.map(char => ({
-      ...char,
+      id: char.id,
+      name: char.name,
       avatarUrl: char.avatar_url,
+      bio: char.bio,
       isCenter: char.is_center,
       sortOrder: char.sort_order,
-      createdAt: char.created_at
+      createdAt: char.created_at,
+      updatedAt: char.updated_at
     })),
     pagination: {
       page,
@@ -81,7 +84,7 @@ export const createCharacter = async ({ name, avatarUrl, bio, isCenter, sortOrde
   bio?: string
   isCenter?: boolean
   sortOrder?: number
-}) => {
+}, adminId: bigint) => {
   const character = await prisma.graph_characters.create({
     data: {
       name,
@@ -93,35 +96,52 @@ export const createCharacter = async ({ name, avatarUrl, bio, isCenter, sortOrde
     select: { id: true }
   })
 
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'create_graph_character',
+      target_type: 'graph_character',
+      target_id: character.id,
+      detail: `创建图谱人物: ${name}`
+    }
+  })
+
   return { id: character.id }
 }
 
-export const updateCharacter = async (id: number, { name, avatarUrl, bio, isCenter, sortOrder }: {
+export const updateCharacter = async (id: bigint, { name, avatarUrl, bio, isCenter, sortOrder }: {
   name?: string
   avatarUrl?: string
   bio?: string
   isCenter?: boolean
   sortOrder?: number
-}) => {
+}, adminId: bigint) => {
   const character = await prisma.graph_characters.findUnique({ where: { id } })
   if (!character) {
     throw new AppError('人物不存在', 404)
   }
 
-  const updateData: Record<string, any> = {}
+  const updateData: Record<string, unknown> = { updated_at: new Date() }
   if (name !== undefined) updateData.name = name
   if (avatarUrl !== undefined) updateData.avatar_url = avatarUrl
   if (bio !== undefined) updateData.bio = bio
   if (isCenter !== undefined) updateData.is_center = isCenter
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
-  await prisma.graph_characters.update({
-    where: { id },
-    data: updateData
+  await prisma.graph_characters.update({ where: { id }, data: updateData })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'update_graph_character',
+      target_type: 'graph_character',
+      target_id: id,
+      detail: `更新图谱人物: ${id}`
+    }
   })
 }
 
-export const deleteCharacter = async (id: number) => {
+export const deleteCharacter = async (id: bigint, adminId: bigint) => {
   const character = await prisma.graph_characters.findUnique({ where: { id } })
   if (!character) {
     throw new AppError('人物不存在', 404)
@@ -137,6 +157,16 @@ export const deleteCharacter = async (id: number) => {
   })
 
   await prisma.graph_characters.delete({ where: { id } })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'delete_graph_character',
+      target_type: 'graph_character',
+      target_id: id,
+      detail: `删除图谱人物: ${character.name}`
+    }
+  })
 }
 
 export const getAdminRelations = async (page: number, pageSize: number) => {
@@ -144,14 +174,15 @@ export const getAdminRelations = async (page: number, pageSize: number) => {
   const [list, total] = await Promise.all([
     prisma.graph_relations.findMany({
       skip,
-      take: pageSize
+      take: pageSize,
+      orderBy: { sort_order: 'desc' }
     }),
     prisma.graph_relations.count()
   ])
 
   return {
     list: list.map(rel => ({
-      ...rel,
+      id: rel.id,
       fromCharacterId: rel.from_character_id,
       toCharacterId: rel.to_character_id,
       relationLabel: rel.relation_label,
@@ -168,11 +199,11 @@ export const getAdminRelations = async (page: number, pageSize: number) => {
 }
 
 export const createRelation = async ({ fromCharacterId, toCharacterId, relationLabel, sortOrder }: {
-  fromCharacterId: number
-  toCharacterId: number
+  fromCharacterId: bigint
+  toCharacterId: bigint
   relationLabel?: string
   sortOrder?: number
-}) => {
+}, adminId: bigint) => {
   const fromChar = await prisma.graph_characters.findUnique({ where: { id: fromCharacterId } })
   const toChar = await prisma.graph_characters.findUnique({ where: { id: toCharacterId } })
 
@@ -189,39 +220,66 @@ export const createRelation = async ({ fromCharacterId, toCharacterId, relationL
     select: { id: true }
   })
 
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'create_graph_relation',
+      target_type: 'graph_relation',
+      target_id: relation.id,
+      detail: `创建图谱关系: ${fromCharacterId} -> ${toCharacterId}`
+    }
+  })
+
   return { id: relation.id }
 }
 
-export const updateRelation = async (id: number, { fromCharacterId, toCharacterId, relationLabel, sortOrder }: {
-  fromCharacterId?: number
-  toCharacterId?: number
+export const updateRelation = async (id: bigint, { fromCharacterId, toCharacterId, relationLabel, sortOrder }: {
+  fromCharacterId?: bigint
+  toCharacterId?: bigint
   relationLabel?: string
   sortOrder?: number
-}) => {
+}, adminId: bigint) => {
   const relation = await prisma.graph_relations.findUnique({ where: { id } })
   if (!relation) {
     throw new AppError('关系不存在', 404)
   }
 
-  const updateData: Record<string, any> = {}
+  const updateData: Record<string, unknown> = {}
   if (fromCharacterId !== undefined) updateData.from_character_id = fromCharacterId
   if (toCharacterId !== undefined) updateData.to_character_id = toCharacterId
   if (relationLabel !== undefined) updateData.relation_label = relationLabel
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
-  await prisma.graph_relations.update({
-    where: { id },
-    data: updateData
+  await prisma.graph_relations.update({ where: { id }, data: updateData })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'update_graph_relation',
+      target_type: 'graph_relation',
+      target_id: id,
+      detail: `更新图谱关系: ${id}`
+    }
   })
 }
 
-export const deleteRelation = async (id: number) => {
+export const deleteRelation = async (id: bigint, adminId: bigint) => {
   const relation = await prisma.graph_relations.findUnique({ where: { id } })
   if (!relation) {
     throw new AppError('关系不存在', 404)
   }
 
   await prisma.graph_relations.delete({ where: { id } })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: adminId,
+      action: 'delete_graph_relation',
+      target_type: 'graph_relation',
+      target_id: id,
+      detail: `删除图谱关系: ${id}`
+    }
+  })
 }
 
 export default {

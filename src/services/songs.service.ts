@@ -1,8 +1,5 @@
 /**
  * 音乐服务
- * 
- * 作用：实现音乐相关业务逻辑（歌曲列表）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -22,7 +19,9 @@ export const getSongs = async () => {
   })
 
   return songs.map(song => ({
-    ...song,
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
     audioUrl: song.audio_url,
     coverUrl: song.cover_url,
     sortOrder: song.sort_order
@@ -42,7 +41,9 @@ export const getAdminSongs = async (page: number, pageSize: number) => {
 
   return {
     list: list.map(song => ({
-      ...song,
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
       audioUrl: song.audio_url,
       coverUrl: song.cover_url,
       sortOrder: song.sort_order,
@@ -63,7 +64,7 @@ export const createSong = async ({ title, artist, audioUrl, coverUrl, sortOrder 
   audioUrl: string
   coverUrl?: string
   sortOrder?: number
-}, adminId: number) => {
+}, adminId: bigint) => {
   const song = await prisma.songs.create({
     data: {
       title,
@@ -79,6 +80,7 @@ export const createSong = async ({ title, artist, audioUrl, coverUrl, sortOrder 
     data: {
       admin_id: adminId,
       action: 'create_song',
+      target_type: 'song',
       target_id: song.id,
       detail: `创建歌曲: ${title}`
     }
@@ -87,42 +89,39 @@ export const createSong = async ({ title, artist, audioUrl, coverUrl, sortOrder 
   return { id: song.id }
 }
 
-export const updateSong = async (id: number, { title, artist, audioUrl, coverUrl, sortOrder }: {
+export const updateSong = async (id: bigint, { title, artist, audioUrl, coverUrl, sortOrder }: {
   title?: string
   artist?: string
   audioUrl?: string
   coverUrl?: string
   sortOrder?: number
-}, adminId: number) => {
+}, adminId: bigint) => {
   const song = await prisma.songs.findUnique({ where: { id } })
   if (!song) {
     throw new AppError('歌曲不存在', 404)
   }
 
-  const updateData: Record<string, any> = {}
+  const updateData: Record<string, unknown> = {}
   if (title !== undefined) updateData.title = title
   if (artist !== undefined) updateData.artist = artist
   if (audioUrl !== undefined) updateData.audio_url = audioUrl
   if (coverUrl !== undefined) updateData.cover_url = coverUrl
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
-  updateData.updated_at = new Date()
 
-  await prisma.songs.update({
-    where: { id },
-    data: updateData
-  })
+  await prisma.songs.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
     data: {
       admin_id: adminId,
       action: 'update_song',
+      target_type: 'song',
       target_id: id,
       detail: `更新歌曲: ${id}`
     }
   })
 }
 
-export const deleteSong = async (id: number, adminId: number) => {
+export const deleteSong = async (id: bigint, adminId: bigint) => {
   const song = await prisma.songs.findUnique({ where: { id } })
   if (!song) {
     throw new AppError('歌曲不存在', 404)
@@ -134,6 +133,7 @@ export const deleteSong = async (id: number, adminId: number) => {
     data: {
       admin_id: adminId,
       action: 'delete_song',
+      target_type: 'song',
       target_id: id,
       detail: `删除歌曲: ${song.title}`
     }

@@ -31,16 +31,18 @@ const app = express()
 const PORT = Number(process.env.PORT) || 3000
 
 app.use(requestLogger)
-app.use(cors())
+
+const corsOrigin = process.env.CORS_ORIGIN
+app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(s => s.trim()) } : undefined))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     code: 0,
-    msg: '后端服务启动成功',
-    time: new Date()
+    msg: 'success',
+    data: { status: 'running', time: new Date() }
   })
 })
 
@@ -58,6 +60,7 @@ import graphRoutes from './routes/graph.route'
 import reportsRoutes from './routes/reports.route'
 import adminRoutes from './routes/admin.route'
 import uploadRoutes from './routes/upload.route'
+import healthRoutes from './routes/health.route'
 
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
@@ -73,6 +76,7 @@ app.use('/api', graphRoutes)
 app.use('/api', reportsRoutes)
 app.use('/api', adminRoutes)
 app.use('/api', uploadRoutes)
+app.use('/api', healthRoutes)
 
 app.use(errorHandler)
 

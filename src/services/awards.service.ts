@@ -1,8 +1,5 @@
 /**
  * 获奖记录服务
- * 
- * 作用：实现获奖记录相关业务逻辑（前台获取/后台CRUD）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -22,7 +19,9 @@ export const getAwards = async () => {
   })
 
   return awards.map(award => ({
-    ...award,
+    id: award.id,
+    title: award.title,
+    description: award.description,
     imageUrl: award.image_url,
     awardDate: award.award_date,
     sortOrder: award.sort_order
@@ -42,7 +41,9 @@ export const getAdminAwards = async (page: number, pageSize: number) => {
 
   return {
     list: list.map(award => ({
-      ...award,
+      id: award.id,
+      title: award.title,
+      description: award.description,
       imageUrl: award.image_url,
       awardDate: award.award_date,
       sortOrder: award.sort_order,
@@ -64,7 +65,7 @@ export const createAward = async ({ title, description, imageUrl, awardDate, sor
   imageUrl?: string
   awardDate?: string
   sortOrder?: number
-}, adminId: number) => {
+}, adminId: bigint) => {
   const award = await prisma.awards.create({
     data: {
       title,
@@ -80,6 +81,7 @@ export const createAward = async ({ title, description, imageUrl, awardDate, sor
     data: {
       admin_id: adminId,
       action: 'create_award',
+      target_type: 'award',
       target_id: award.id,
       detail: `创建获奖记录: ${title}`
     }
@@ -88,42 +90,39 @@ export const createAward = async ({ title, description, imageUrl, awardDate, sor
   return { id: award.id }
 }
 
-export const updateAward = async (id: number, { title, description, imageUrl, awardDate, sortOrder }: {
+export const updateAward = async (id: bigint, { title, description, imageUrl, awardDate, sortOrder }: {
   title?: string
   description?: string
   imageUrl?: string
   awardDate?: string
   sortOrder?: number
-}, adminId: number) => {
+}, adminId: bigint) => {
   const award = await prisma.awards.findUnique({ where: { id } })
   if (!award) {
     throw new AppError('获奖记录不存在', 404)
   }
 
-  const updateData: Record<string, any> = {}
+  const updateData: Record<string, unknown> = { updated_at: new Date() }
   if (title !== undefined) updateData.title = title
   if (description !== undefined) updateData.description = description
   if (imageUrl !== undefined) updateData.image_url = imageUrl
   if (awardDate !== undefined) updateData.award_date = awardDate || null
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
-  updateData.updated_at = new Date()
 
-  await prisma.awards.update({
-    where: { id },
-    data: updateData
-  })
+  await prisma.awards.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
     data: {
       admin_id: adminId,
       action: 'update_award',
+      target_type: 'award',
       target_id: id,
       detail: `更新获奖记录: ${id}`
     }
   })
 }
 
-export const deleteAward = async (id: number, adminId: number) => {
+export const deleteAward = async (id: bigint, adminId: bigint) => {
   const award = await prisma.awards.findUnique({ where: { id } })
   if (!award) {
     throw new AppError('获奖记录不存在', 404)
@@ -135,6 +134,7 @@ export const deleteAward = async (id: number, adminId: number) => {
     data: {
       admin_id: adminId,
       action: 'delete_award',
+      target_type: 'award',
       target_id: id,
       detail: `删除获奖记录: ${award.title}`
     }

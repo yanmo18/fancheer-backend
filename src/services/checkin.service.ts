@@ -1,16 +1,20 @@
 /**
  * 打卡服务
- * 
- * 作用：实现打卡相关业务逻辑（打卡/打卡日历）
- *       与数据库交互、处理业务规则（每日只能打卡一次）
  */
 
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { TIMEZONE } from '../config/constants'
 
-export const checkin = async (userId: number) => {
-  const today = new Date().toISOString().split('T')[0]
-  
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+export const checkin = async (userId: bigint) => {
+  const today = dayjs().tz(TIMEZONE).format('YYYY-MM-DD')
+
   const existingCheckin = await prisma.check_ins.findFirst({
     where: {
       user_id: userId,
@@ -32,9 +36,9 @@ export const checkin = async (userId: number) => {
   return { checked: true, message: '打卡成功' }
 }
 
-export const getCheckinCalendar = async (userId: number, year: number, month: number) => {
-  const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0]
-  const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+export const getCheckinCalendar = async (userId: bigint, year: number, month: number) => {
+  const startDate = dayjs().tz(TIMEZONE).year(year).month(month - 1).date(1).format('YYYY-MM-DD')
+  const endDate = dayjs().tz(TIMEZONE).year(year).month(month - 1).endOf('month').format('YYYY-MM-DD')
 
   const checkins = await prisma.check_ins.findMany({
     where: {
@@ -47,12 +51,12 @@ export const getCheckinCalendar = async (userId: number, year: number, month: nu
     select: { check_date: true }
   })
 
-  const checkedDates = new Set(checkins.map(c => c.check_date))
+  const checkedDates = checkins.map(c => dayjs(c.check_date).format('YYYY-MM-DD'))
 
   return {
     year,
     month,
-    checkedDates: Array.from(checkedDates)
+    checkedDates
   }
 }
 

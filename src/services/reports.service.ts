@@ -1,8 +1,5 @@
 /**
  * 举报工单服务
- * 
- * 作用：实现举报工单相关业务逻辑（后台管理）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -11,9 +8,9 @@ import AppError from '../utils/appError'
 export const getReports = async (page: number, pageSize: number, status?: string) => {
   const skip = (page - 1) * pageSize
 
-  const whereClause: any = {}
+  const whereClause: { status?: 'pending' | 'resolved' } = {}
   if (status) {
-    whereClause.status = status
+    whereClause.status = status as 'pending' | 'resolved'
   }
 
   const [list, total] = await Promise.all([
@@ -31,22 +28,26 @@ export const getReports = async (page: number, pageSize: number, status?: string
   ])
 
   const senderIds = list.map(r => r.messages?.sender_id).filter(Boolean) as bigint[]
-  const senders = await prisma.users.findMany({
-    where: { id: { in: senderIds } },
-    select: { id: true, nickname: true }
-  })
-  const senderMap = new Map(senders.map(s => [s.id, s.nickname]))
+  const senders = senderIds.length > 0
+    ? await prisma.users.findMany({
+        where: { id: { in: senderIds } },
+        select: { id: true, nickname: true }
+      })
+    : []
+  const senderMap = new Map(senders.map(s => [s.id.toString(), s.nickname]))
 
   return {
     list: list.map(report => ({
-      id: Number(report.id),
-      reporterId: Number(report.reporter_id),
+      id: report.id,
+      reporterId: report.reporter_id,
       reporterNickname: report.users?.nickname || '',
-      messageId: Number(report.message_id),
+      messageId: report.message_id,
       messageContent: report.messages?.content || '',
       messageType: report.messages?.type || '',
-      messageSenderId: report.messages?.sender_id ? Number(report.messages.sender_id) : 0,
-      messageSenderNickname: senderMap.get(report.messages?.sender_id || 0n) || '',
+      messageSenderId: report.messages?.sender_id || null,
+      messageSenderNickname: report.messages?.sender_id
+        ? senderMap.get(report.messages.sender_id.toString()) || ''
+        : '',
       reason: report.reason,
       status: report.status,
       createdAt: report.created_at,
@@ -61,7 +62,7 @@ export const getReports = async (page: number, pageSize: number, status?: string
   }
 }
 
-export const getReportDetail = async (id: number) => {
+export const getReportDetail = async (id: bigint) => {
   const report = await prisma.reports.findUnique({
     where: { id },
     include: {
@@ -74,10 +75,12 @@ export const getReportDetail = async (id: number) => {
     throw new AppError('举报工单不存在', 404)
   }
 
-  const sender = await prisma.users.findUnique({
-    where: { id: report.messages?.sender_id || 0 },
-    select: { id: true, nickname: true }
-  })
+  const sender = report.messages?.sender_id
+    ? await prisma.users.findUnique({
+        where: { id: report.messages.sender_id },
+        select: { id: true, nickname: true }
+      })
+    : null
 
   return {
     id: report.id,
@@ -86,7 +89,7 @@ export const getReportDetail = async (id: number) => {
     messageId: report.message_id,
     messageContent: report.messages?.content || '',
     messageType: report.messages?.type || '',
-    messageSenderId: report.messages?.sender_id || 0,
+    messageSenderId: report.messages?.sender_id || null,
     messageSenderNickname: sender?.nickname || '',
     reason: report.reason,
     status: report.status,
@@ -95,7 +98,7 @@ export const getReportDetail = async (id: number) => {
   }
 }
 
-export const resolveReport = async (id: number, adminId: number) => {
+export const resolveReport = async (id: bigint, adminId: bigint) => {
   const report = await prisma.reports.findUnique({ where: { id } })
   if (!report) {
     throw new AppError('举报工单不存在', 404)
@@ -107,10 +110,7 @@ export const resolveReport = async (id: number, adminId: number) => {
 
   await prisma.reports.update({
     where: { id },
-    data: {
-      status: 'resolved',
-      resolved_at: new Date()
-    }
+    data: { status: 'resolved', resolved_at: new Date() }
   })
 
   await prisma.admin_logs.create({
@@ -124,8 +124,8 @@ export const resolveReport = async (id: number, adminId: number) => {
   })
 }
 
-export const deleteViolationMessage = async (reportId: number, adminId: number) => {
-  const report = await prisma.reports.findUnique({ 
+export const deleteViolationMessage = async (reportId: bigint, adminId: bigint) => {
+  const report = await prisma.reports.findUnique({
     where: { id: reportId },
     include: { messages: true }
   })
@@ -140,16 +140,11 @@ export const deleteViolationMessage = async (reportId: number, adminId: number) 
 
   const messageId = report.messages.id
 
-  await prisma.messages.delete({
-    where: { id: messageId }
-  })
+  await prisma.messages.delete({ where: { id: messageId } })
 
   await prisma.reports.updateMany({
     where: { message_id: messageId },
-    data: {
-      status: 'resolved',
-      resolved_at: new Date()
-    }
+    data: { status: 'resolved', resolved_at: new Date() }
   })
 
   await prisma.admin_logs.create({
