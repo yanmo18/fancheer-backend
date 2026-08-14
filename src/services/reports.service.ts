@@ -66,8 +66,18 @@ export const getReportDetail = async (id: bigint) => {
   const report = await prisma.reports.findUnique({
     where: { id },
     include: {
-      messages: { select: { id: true, content: true, sender_id: true, type: true } },
-      users: { select: { id: true, nickname: true } }
+      messages: {
+        select: {
+          id: true,
+          content: true,
+          sender_id: true,
+          type: true,
+          like_count: true,
+          created_at: true,
+          _count: { select: { likes: true } }
+        }
+      },
+      users: { select: { id: true, nickname: true, username: true } }
     }
   })
 
@@ -78,23 +88,32 @@ export const getReportDetail = async (id: bigint) => {
   const sender = report.messages?.sender_id
     ? await prisma.users.findUnique({
         where: { id: report.messages.sender_id },
-        select: { id: true, nickname: true }
+        select: { id: true, nickname: true, username: true }
       })
     : null
+
+  const relatedReportCount = await prisma.reports.count({
+    where: { message_id: report.message_id }
+  })
 
   return {
     id: report.id,
     reporterId: report.reporter_id,
     reporterNickname: report.users?.nickname || '',
+    reporterUsername: report.users?.username || '',
     messageId: report.message_id,
     messageContent: report.messages?.content || '',
     messageType: report.messages?.type || '',
+    messageCreatedAt: report.messages?.created_at || null,
+    messageLikeCount: report.messages?._count.likes ?? report.messages?.like_count ?? 0,
     messageSenderId: report.messages?.sender_id || null,
     messageSenderNickname: sender?.nickname || '',
+    messageSenderUsername: sender?.username || '',
     reason: report.reason,
     status: report.status,
     resolvedAt: report.resolved_at,
-    createdAt: report.created_at
+    createdAt: report.created_at,
+    relatedReportCount
   }
 }
 
