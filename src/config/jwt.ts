@@ -1,25 +1,27 @@
 /**
  * JWT工具函数
- * 
- * 作用：生成和验证JWT Token，用于用户认证
- * 
- * 使用方式：
- *   import { signToken, verifyToken } from '../config/jwt'
- *   const token = signToken({ userId: 1, role: 'fan', jti: 'uuid' })
- *   const payload = verifyToken(token)
  */
 
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
+import type { UserPayload } from '../types'
 
 dotenv.config()
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET 环境变量未配置，请在 .env 中设置')
+  }
+  return secret
+}
 
-export const signToken = (payload: { userId: number; role: string; jti: string }): string => {
+const JWT_SECRET = getJwtSecret()
+
+export const signToken = (payload: { userId: string; role: string; jti: string }): string => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
 }
 
-export const verifyToken = (token: string): any => {
-  return jwt.verify(token, JWT_SECRET)
+export const verifyToken = (token: string): UserPayload => {
+  return jwt.verify(token, JWT_SECRET) as UserPayload
 }

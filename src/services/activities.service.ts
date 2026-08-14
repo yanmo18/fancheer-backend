@@ -1,8 +1,5 @@
 /**
  * 活动日历服务
- * 
- * 作用：实现活动日历相关业务逻辑（前台获取/后台CRUD）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -23,7 +20,9 @@ export const getActivities = async () => {
   })
 
   return activities.map(activity => ({
-    ...activity,
+    id: activity.id,
+    title: activity.title,
+    description: activity.description,
     coverUrl: activity.cover_url,
     startTime: activity.start_time,
     endTime: activity.end_time,
@@ -44,12 +43,15 @@ export const getAdminActivities = async (page: number, pageSize: number) => {
 
   return {
     list: list.map(activity => ({
-      ...activity,
+      id: activity.id,
+      title: activity.title,
+      description: activity.description,
       coverUrl: activity.cover_url,
       startTime: activity.start_time,
       endTime: activity.end_time,
       sortOrder: activity.sort_order,
-      createdAt: activity.created_at
+      createdAt: activity.created_at,
+      updatedAt: activity.updated_at
     })),
     pagination: {
       page,
@@ -67,7 +69,7 @@ export const createActivity = async ({ title, description, coverUrl, startTime, 
   startTime: string
   endTime?: string
   sortOrder?: number
-}, adminId: number) => {
+}, adminId: bigint) => {
   const activity = await prisma.activities.create({
     data: {
       title,
@@ -84,6 +86,7 @@ export const createActivity = async ({ title, description, coverUrl, startTime, 
     data: {
       admin_id: adminId,
       action: 'create_activity',
+      target_type: 'activity',
       target_id: activity.id,
       detail: `创建活动: ${title}`
     }
@@ -92,20 +95,20 @@ export const createActivity = async ({ title, description, coverUrl, startTime, 
   return { id: activity.id }
 }
 
-export const updateActivity = async (id: number, { title, description, coverUrl, startTime, endTime, sortOrder }: {
+export const updateActivity = async (id: bigint, { title, description, coverUrl, startTime, endTime, sortOrder }: {
   title?: string
   description?: string
   coverUrl?: string
   startTime?: string
   endTime?: string
   sortOrder?: number
-}, adminId: number) => {
+}, adminId: bigint) => {
   const activity = await prisma.activities.findUnique({ where: { id } })
   if (!activity) {
     throw new AppError('活动不存在', 404)
   }
 
-  const updateData: Record<string, any> = {}
+  const updateData: Record<string, unknown> = { updated_at: new Date() }
   if (title !== undefined) updateData.title = title
   if (description !== undefined) updateData.description = description
   if (coverUrl !== undefined) updateData.cover_url = coverUrl
@@ -113,22 +116,20 @@ export const updateActivity = async (id: number, { title, description, coverUrl,
   if (endTime !== undefined) updateData.end_time = endTime || null
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
-  await prisma.activities.update({
-    where: { id },
-    data: updateData
-  })
+  await prisma.activities.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
     data: {
       admin_id: adminId,
       action: 'update_activity',
+      target_type: 'activity',
       target_id: id,
       detail: `更新活动: ${id}`
     }
   })
 }
 
-export const deleteActivity = async (id: number, adminId: number) => {
+export const deleteActivity = async (id: bigint, adminId: bigint) => {
   const activity = await prisma.activities.findUnique({ where: { id } })
   if (!activity) {
     throw new AppError('活动不存在', 404)
@@ -140,6 +141,7 @@ export const deleteActivity = async (id: number, adminId: number) => {
     data: {
       admin_id: adminId,
       action: 'delete_activity',
+      target_type: 'activity',
       target_id: id,
       detail: `删除活动: ${activity.title}`
     }

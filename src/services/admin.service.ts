@@ -1,18 +1,15 @@
 /**
  * 管理后台服务
- * 
- * 作用：实现管理后台相关业务逻辑（用户管理/消息管理/头像池管理/敏感词管理/操作日志）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
-import redis from '../config/redis'
 import AppError from '../utils/appError'
+import { loadSensitiveWords } from '../utils/sensitiveWord'
 
 export const getUsers = async (page: number, pageSize: number, role?: string, status?: string, keyword?: string) => {
   const skip = (page - 1) * pageSize
 
-  const whereClause: any = {}
+  const whereClause: Record<string, unknown> = {}
   if (role) whereClause.role = role
   if (status) whereClause.status = status
   if (keyword) {
@@ -52,22 +49,19 @@ export const getUsers = async (page: number, pageSize: number, role?: string, st
   }
 }
 
-export const banUser = async (id: number, adminId: number) => {
+export const banUser = async (id: bigint, adminId: bigint) => {
   const user = await prisma.users.findUnique({ where: { id } })
   if (!user) {
     throw new AppError('用户不存在', 404)
   }
 
   if (user.role === 'admin' || user.role === 'streamer') {
-    throw new AppError('不能封禁管理员或主播', 400)
+    throw new AppError('不能封禁协管员或站主', 400)
   }
 
   await prisma.users.update({
     where: { id },
-    data: {
-      status: 'banned',
-      updated_at: new Date()
-    }
+    data: { status: 'banned', updated_at: new Date() }
   })
 
   await prisma.admin_logs.create({
@@ -81,7 +75,7 @@ export const banUser = async (id: number, adminId: number) => {
   })
 }
 
-export const unbanUser = async (id: number, adminId: number) => {
+export const unbanUser = async (id: bigint, adminId: bigint) => {
   const user = await prisma.users.findUnique({ where: { id } })
   if (!user) {
     throw new AppError('用户不存在', 404)
@@ -89,10 +83,7 @@ export const unbanUser = async (id: number, adminId: number) => {
 
   await prisma.users.update({
     where: { id },
-    data: {
-      status: 'active',
-      updated_at: new Date()
-    }
+    data: { status: 'active', updated_at: new Date() }
   })
 
   await prisma.admin_logs.create({
@@ -109,7 +100,7 @@ export const unbanUser = async (id: number, adminId: number) => {
 export const getPublicMessages = async (page: number, pageSize: number, keyword?: string) => {
   const skip = (page - 1) * pageSize
 
-  const whereClause: any = { type: 'public' }
+  const whereClause: { type: 'public'; content?: { contains: string } } = { type: 'public' }
   if (keyword) {
     whereClause.content = { contains: keyword }
   }
@@ -149,10 +140,10 @@ export const getPublicMessages = async (page: number, pageSize: number, keyword?
   }
 }
 
-export const getPrivateMessages = async (page: number, pageSize: number, userId?: number) => {
+export const getPrivateMessages = async (page: number, pageSize: number, userId?: bigint) => {
   const skip = (page - 1) * pageSize
 
-  const whereClause: any = { type: 'private' }
+  const whereClause: { type: 'private'; sender_id?: bigint } = { type: 'private' }
   if (userId) {
     whereClause.sender_id = userId
   }
@@ -189,15 +180,13 @@ export const getPrivateMessages = async (page: number, pageSize: number, userId?
   }
 }
 
-export const deleteMessage = async (id: number, adminId: number) => {
+export const deleteMessage = async (id: bigint, adminId: bigint) => {
   const message = await prisma.messages.findUnique({ where: { id } })
   if (!message) {
     throw new AppError('消息不存在', 404)
   }
 
-  await prisma.messages.delete({
-    where: { id }
-  })
+  await prisma.messages.delete({ where: { id } })
 
   await prisma.admin_logs.create({
     data: {
@@ -238,12 +227,9 @@ export const getAvatars = async (page: number, pageSize: number) => {
   }
 }
 
-export const createAvatar = async (url: string, sortOrder: number, adminId: number) => {
+export const createAvatar = async (url: string, sortOrder: number, adminId: bigint) => {
   const avatar = await prisma.avatars.create({
-    data: {
-      url,
-      sort_order: sortOrder
-    },
+    data: { url, sort_order: sortOrder },
     select: { id: true }
   })
 
@@ -260,15 +246,18 @@ export const createAvatar = async (url: string, sortOrder: number, adminId: numb
   return { id: avatar.id }
 }
 
-export const deleteAvatar = async (id: number, adminId: number) => {
+export const deleteAvatar = async (id: bigint, adminId: bigint) => {
   const avatar = await prisma.avatars.findUnique({ where: { id } })
   if (!avatar) {
     throw new AppError('头像不存在', 404)
   }
 
-  await prisma.avatars.delete({
-    where: { id }
-  })
+  const usageCount = await prisma.users.count({ where: { avatar_id: id } })
+  if (usageCount > 0) {
+    throw new AppError(`该头像正在被 ${usageCount} 个用户使用，无法删除`, 400)
+  }
+
+  await prisma.avatars.delete({ where: { id } })
 
   await prisma.admin_logs.create({
     data: {
@@ -308,7 +297,7 @@ export const getSensitiveWords = async (page: number, pageSize: number) => {
   }
 }
 
-export const createSensitiveWord = async (word: string, adminId: number) => {
+export const createSensitiveWord = async (word: string, adminId: bigint) => {
   const existing = await prisma.sensitive_words.findUnique({ where: { word } })
   if (existing) {
     throw new AppError('敏感词已存在', 409)
@@ -329,18 +318,18 @@ export const createSensitiveWord = async (word: string, adminId: number) => {
     }
   })
 
+  await loadSensitiveWords()
+
   return { id: sensitiveWord.id }
 }
 
-export const deleteSensitiveWord = async (id: number, adminId: number) => {
+export const deleteSensitiveWord = async (id: bigint, adminId: bigint) => {
   const sensitiveWord = await prisma.sensitive_words.findUnique({ where: { id } })
   if (!sensitiveWord) {
     throw new AppError('敏感词不存在', 404)
   }
 
-  await prisma.sensitive_words.delete({
-    where: { id }
-  })
+  await prisma.sensitive_words.delete({ where: { id } })
 
   await prisma.admin_logs.create({
     data: {
@@ -351,6 +340,8 @@ export const deleteSensitiveWord = async (id: number, adminId: number) => {
       detail: `删除敏感词: ${sensitiveWord.word}`
     }
   })
+
+  await loadSensitiveWords()
 }
 
 export const getLogs = async (page: number, pageSize: number) => {
@@ -365,7 +356,15 @@ export const getLogs = async (page: number, pageSize: number) => {
   ])
 
   return {
-    list,
+    list: list.map(log => ({
+      id: log.id,
+      adminId: log.admin_id,
+      action: log.action,
+      targetType: log.target_type,
+      targetId: log.target_id,
+      detail: log.detail,
+      createdAt: log.created_at
+    })),
     pagination: {
       page,
       pageSize,
@@ -386,7 +385,7 @@ export const updateUserRole = async (targetUserId: bigint, newRole: string, oper
   }
 
   if (targetUser.role === 'streamer') {
-    throw new AppError('不能修改主播的角色', 403)
+    throw new AppError('不能修改站主的角色', 403)
   }
 
   if (targetUserId === operatorId) {

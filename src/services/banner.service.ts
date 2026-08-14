@@ -1,8 +1,5 @@
 /**
  * Banner服务
- * 
- * 作用：实现Banner相关业务逻辑（前台获取/后台CRUD）
- *       与数据库交互、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -22,7 +19,8 @@ export const getBanners = async () => {
   })
 
   return banners.map(banner => ({
-    ...banner,
+    id: banner.id,
+    title: banner.title,
     imageUrl: banner.image_url,
     linkUrl: banner.link_url,
     sortOrder: banner.sort_order
@@ -42,7 +40,8 @@ export const getAdminBanners = async (page: number, pageSize: number) => {
 
   return {
     list: list.map(banner => ({
-      ...banner,
+      id: banner.id,
+      title: banner.title,
       imageUrl: banner.image_url,
       linkUrl: banner.link_url,
       sortOrder: banner.sort_order,
@@ -65,7 +64,7 @@ export const createBanner = async ({ title, imageUrl, linkUrl, sortOrder, isVisi
   linkUrl?: string
   sortOrder?: number
   isVisible?: boolean
-}, adminId: number) => {
+}, adminId: bigint) => {
   const banner = await prisma.banners.create({
     data: {
       title: title || '',
@@ -81,6 +80,7 @@ export const createBanner = async ({ title, imageUrl, linkUrl, sortOrder, isVisi
     data: {
       admin_id: adminId,
       action: 'create_banner',
+      target_type: 'banner',
       target_id: banner.id,
       detail: `创建Banner: ${title || '无标题'}`
     }
@@ -89,42 +89,39 @@ export const createBanner = async ({ title, imageUrl, linkUrl, sortOrder, isVisi
   return { id: banner.id }
 }
 
-export const updateBanner = async (id: number, { title, imageUrl, linkUrl, sortOrder, isVisible }: {
+export const updateBanner = async (id: bigint, { title, imageUrl, linkUrl, sortOrder, isVisible }: {
   title?: string
   imageUrl?: string
   linkUrl?: string
   sortOrder?: number
   isVisible?: boolean
-}, adminId: number) => {
+}, adminId: bigint) => {
   const banner = await prisma.banners.findUnique({ where: { id } })
   if (!banner) {
     throw new AppError('Banner不存在', 404)
   }
 
-  const updateData: Record<string, any> = {}
+  const updateData: Record<string, unknown> = { updated_at: new Date() }
   if (title !== undefined) updateData.title = title
   if (imageUrl !== undefined) updateData.image_url = imageUrl
   if (linkUrl !== undefined) updateData.link_url = linkUrl
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
   if (isVisible !== undefined) updateData.is_visible = isVisible
-  updateData.updated_at = new Date()
 
-  await prisma.banners.update({
-    where: { id },
-    data: updateData
-  })
+  await prisma.banners.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
     data: {
       admin_id: adminId,
       action: 'update_banner',
+      target_type: 'banner',
       target_id: id,
       detail: `更新Banner: ${id}`
     }
   })
 }
 
-export const deleteBanner = async (id: number, adminId: number) => {
+export const deleteBanner = async (id: bigint, adminId: bigint) => {
   const banner = await prisma.banners.findUnique({ where: { id } })
   if (!banner) {
     throw new AppError('Banner不存在', 404)
@@ -136,6 +133,7 @@ export const deleteBanner = async (id: number, adminId: number) => {
     data: {
       admin_id: adminId,
       action: 'delete_banner',
+      target_type: 'banner',
       target_id: id,
       detail: `删除Banner: ${banner.title || '无标题'}`
     }

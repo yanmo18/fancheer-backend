@@ -1,8 +1,5 @@
 /**
  * 认证服务
- * 
- * 作用：实现认证相关业务逻辑（验证码/注册/登录/登出/获取用户信息）
- *       与数据库交互、调用工具函数、处理业务规则
  */
 
 import { prisma } from '../lib/prisma'
@@ -13,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import svgCaptcha from 'svg-captcha'
 import crypto from 'crypto'
 import AppError from '../utils/appError'
+import { EXPIRY_TIME, REDIS_KEYS } from '../config/constants'
 
 export const getCaptcha = async () => {
   const captcha = svgCaptcha.create({
@@ -24,7 +22,7 @@ export const getCaptcha = async () => {
   })
 
   const captchaId = crypto.randomUUID()
-  await redis.set(`${captchaId}:svg_captcha`, captcha.text.toLowerCase(), 'EX', 300)
+  await redis.set(REDIS_KEYS.captcha(captchaId), captcha.text.toLowerCase(), 'EX', EXPIRY_TIME.CAPTCHA_EXPIRES)
 
   return {
     svg: captcha.data,
@@ -38,12 +36,12 @@ export const register = async ({ username, password, captchaId, captchaText }: {
   captchaId: string
   captchaText: string
 }) => {
-  const storedCaptcha = await redis.get(`${captchaId}:svg_captcha`)
+  const storedCaptcha = await redis.get(REDIS_KEYS.captcha(captchaId))
   if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
     throw new AppError('验证码错误', 400)
   }
 
-  await redis.del(`${captchaId}:svg_captcha`)
+  await redis.del(REDIS_KEYS.captcha(captchaId))
 
   const existingUser = await prisma.users.findUnique({ where: { username } })
   if (existingUser) {
@@ -70,13 +68,21 @@ export const login = async ({ username, password }: {
   username: string
   password: string
 }) => {
+  const loginKey = REDIS_KEYS.loginRateLimit(username)
+  const locked = await redis.get(loginKey)
+  if (locked) {
+    throw new AppError('登录尝试过于频繁，请60秒后再试', 429)
+  }
+
   const user = await prisma.users.findUnique({ where: { username } })
   if (!user) {
+    await redis.set(loginKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
     throw new AppError('用户名或密码错误', 400)
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password_hash)
   if (!isPasswordValid) {
+    await redis.set(loginKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
     throw new AppError('用户名或密码错误', 400)
   }
 
@@ -85,7 +91,7 @@ export const login = async ({ username, password }: {
   }
 
   const jti = crypto.randomUUID()
-  const token = signToken({ userId: Number(user.id), role: user.role, jti })
+  const token = signToken({ userId: user.id.toString(), role: user.role, jti })
 
   await prisma.users.update({
     where: { id: user.id },
@@ -107,20 +113,19 @@ export const login = async ({ username, password }: {
   }
 }
 
-export const logout = async (userId: number, token: string) => {
+export const logout = async (token: string) => {
   try {
-    const decoded = jwt.decode(token) as any
-    if (decoded && decoded.jti) {
-      const expiresAt = decoded.exp * 1000
-      const ttl = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
-      await redis.set(`jwt_blacklist:${decoded.jti}`, '1', 'EX', ttl)
+    const decoded = jwt.decode(token) as { jti?: string; exp?: number } | null
+    if (decoded?.jti && decoded.exp) {
+      const ttl = Math.max(0, Math.floor(decoded.exp - Date.now() / 1000))
+      await redis.set(REDIS_KEYS.jwtBlacklist(decoded.jti), '1', 'EX', ttl)
     }
   } catch (err) {
     console.error('登出失败:', err)
   }
 }
 
-export const getMe = async (userId: number) => {
+export const getMe = async (userId: bigint) => {
   const user = await prisma.users.findUnique({
     where: { id: userId },
     include: { avatars: true }

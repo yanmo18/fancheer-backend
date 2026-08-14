@@ -1,17 +1,28 @@
 /**
  * 聊天室服务
- * 
- * 作用：实现聊天室相关业务逻辑（发送消息/获取消息/点赞/私密消息/举报/回复）
- *       与数据库交互、调用工具函数、处理业务规则（限流、点赞幂等、私密消息隔离）
  */
 
 import { prisma } from '../lib/prisma'
 import redis from '../config/redis'
 import AppError from '../utils/appError'
+import { EXPIRY_TIME, REDIS_KEYS } from '../config/constants'
 
-export const getPublicMessages = async (before?: string, limit: number = 20, userId?: number, userRole?: string) => {
-  const whereClause: any = { type: 'public' }
-  
+const getLikeCount = async (messageId: bigint) => {
+  return prisma.likes.count({ where: { message_id: messageId } })
+}
+
+const checkMessageRateLimit = async (userId: bigint) => {
+  const key = REDIS_KEYS.messageRateLimit(userId)
+  const lastMessage = await redis.get(key)
+  if (lastMessage) {
+    throw new AppError('发送过于频繁，请20秒后再试', 429)
+  }
+  await redis.set(key, '1', 'EX', EXPIRY_TIME.MESSAGE_COOLDOWN)
+}
+
+export const getPublicMessages = async (before?: string, limit: number = 20, userId?: bigint) => {
+  const whereClause: { type: 'public'; created_at?: { lt: Date } } = { type: 'public' }
+
   if (before) {
     whereClause.created_at = { lt: new Date(before) }
   }
@@ -21,7 +32,7 @@ export const getPublicMessages = async (before?: string, limit: number = 20, use
     take: Math.min(limit, 20),
     orderBy: { created_at: 'desc' },
     include: {
-      users: { select: { id: true, nickname: true, avatar_id: true, avatars: true } },
+      users: { select: { id: true, nickname: true, avatars: true } },
       _count: { select: { likes: true } }
     }
   })
@@ -36,8 +47,8 @@ export const getPublicMessages = async (before?: string, limit: number = 20, use
   }
 
   return messages.map(msg => ({
-    id: Number(msg.id),
-    senderId: Number(msg.users.id),
+    id: msg.id,
+    senderId: msg.users.id,
     senderNickname: msg.users.nickname || '',
     senderAvatar: msg.users.avatars?.url || '',
     content: msg.content,
@@ -48,13 +59,8 @@ export const getPublicMessages = async (before?: string, limit: number = 20, use
   }))
 }
 
-export const sendMessage = async (userId: number, content: string, type: string = 'public') => {
-  const lastMessage = await redis.get(`rate_limit:msg:${userId}`)
-  if (lastMessage) {
-    throw new AppError('发送过于频繁，请20秒后再试', 429)
-  }
-
-  await redis.set(`rate_limit:msg:${userId}`, '1', 'EX', 20)
+export const sendMessage = async (userId: bigint, content: string, type: string = 'public') => {
+  await checkMessageRateLimit(userId)
 
   const message = await prisma.messages.create({
     data: {
@@ -62,27 +68,26 @@ export const sendMessage = async (userId: number, content: string, type: string 
       content,
       type: type as 'public' | 'private'
     },
-    select: { id: true, content: true, type: true, created_at: true, like_count: true }
+    select: { id: true, content: true, type: true, created_at: true }
   })
 
   return {
     id: message.id,
     content: message.content,
     type: message.type,
-    likeCount: message.like_count,
+    likeCount: 0,
     createdAt: message.created_at
   }
 }
 
-export const likeMessage = async (userId: number, messageId: number) => {
-  const idempotencyKey = `like:${userId}:${messageId}`
+export const likeMessage = async (userId: bigint, messageId: bigint) => {
+  const idempotencyKey = REDIS_KEYS.likeAdd(userId, messageId)
   const existing = await redis.get(idempotencyKey)
   if (existing) {
-    const message = await prisma.messages.findUnique({ where: { id: messageId } })
-    return { likeCount: message?.like_count || 0 }
+    return { likeCount: await getLikeCount(messageId) }
   }
 
-  await redis.set(idempotencyKey, '1', 'EX', 1)
+  await redis.set(idempotencyKey, '1', 'EX', EXPIRY_TIME.LIKE_IDEMPOTENT)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -101,28 +106,25 @@ export const likeMessage = async (userId: number, messageId: number) => {
     throw new AppError('已点赞过', 409)
   }
 
-  await prisma.likes.create({
-    data: { user_id: userId, message_id: messageId }
-  })
+  await prisma.$transaction([
+    prisma.likes.create({ data: { user_id: userId, message_id: messageId } }),
+    prisma.messages.update({
+      where: { id: messageId },
+      data: { like_count: { increment: 1 } }
+    })
+  ])
 
-  const updatedMessage = await prisma.messages.update({
-    where: { id: messageId },
-    data: { like_count: { increment: 1 } },
-    select: { like_count: true }
-  })
-
-  return { likeCount: updatedMessage.like_count }
+  return { likeCount: await getLikeCount(messageId) }
 }
 
-export const unlikeMessage = async (userId: number, messageId: number) => {
-  const idempotencyKey = `like:${userId}:${messageId}`
+export const unlikeMessage = async (userId: bigint, messageId: bigint) => {
+  const idempotencyKey = REDIS_KEYS.likeRemove(userId, messageId)
   const existing = await redis.get(idempotencyKey)
   if (existing) {
-    const message = await prisma.messages.findUnique({ where: { id: messageId } })
-    return { likeCount: message?.like_count || 0 }
+    return { likeCount: await getLikeCount(messageId) }
   }
 
-  await redis.set(idempotencyKey, '1', 'EX', 1)
+  await redis.set(idempotencyKey, '1', 'EX', EXPIRY_TIME.LIKE_IDEMPOTENT)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -141,22 +143,22 @@ export const unlikeMessage = async (userId: number, messageId: number) => {
     throw new AppError('未点赞', 404)
   }
 
-  await prisma.likes.delete({
-    where: { user_id_message_id: { user_id: userId, message_id: messageId } }
-  })
+  await prisma.$transaction([
+    prisma.likes.delete({
+      where: { user_id_message_id: { user_id: userId, message_id: messageId } }
+    }),
+    prisma.messages.update({
+      where: { id: messageId },
+      data: { like_count: { decrement: 1 } }
+    })
+  ])
 
-  const updatedMessage = await prisma.messages.update({
-    where: { id: messageId },
-    data: { like_count: { decrement: 1 } },
-    select: { like_count: true }
-  })
-
-  return { likeCount: updatedMessage.like_count }
+  return { likeCount: await getLikeCount(messageId) }
 }
 
 export const getPublicReplies = async (before?: string, limit: number = 20) => {
-  const whereClause: any = { is_public: true }
-  
+  const whereClause: { is_public: true; created_at?: { lt: Date } } = { is_public: true }
+
   if (before) {
     whereClause.created_at = { lt: new Date(before) }
   }
@@ -167,7 +169,7 @@ export const getPublicReplies = async (before?: string, limit: number = 20) => {
     orderBy: { created_at: 'desc' },
     include: {
       messages: { select: { content: true } },
-      users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatar_id: true, avatars: true } }
+      users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatars: true } }
     }
   })
 
@@ -183,7 +185,7 @@ export const getPublicReplies = async (before?: string, limit: number = 20) => {
   }))
 }
 
-export const getPrivateMessages = async (userId: number, page: number, pageSize: number) => {
+export const getPrivateMessages = async (userId: bigint, page: number, pageSize: number) => {
   const skip = (page - 1) * pageSize
 
   const [list, total] = await Promise.all([
@@ -194,7 +196,7 @@ export const getPrivateMessages = async (userId: number, page: number, pageSize:
       orderBy: { created_at: 'desc' },
       include: {
         messages: { select: { content: true } },
-        users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatar_id: true, avatars: true } }
+        users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatars: true } }
       }
     }),
     prisma.private_replies.count({ where: { target_user_id: userId, is_public: true } })
@@ -220,13 +222,13 @@ export const getPrivateMessages = async (userId: number, page: number, pageSize:
   }
 }
 
-export const reportMessage = async (userId: number, messageId: number, reason: string) => {
+export const reportMessage = async (userId: bigint, messageId: bigint, reason: string) => {
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
     throw new AppError('消息不存在', 404)
   }
 
-  if (Number(message.sender_id) === userId) {
+  if (message.sender_id === userId) {
     throw new AppError('不能举报自己的消息', 400)
   }
 
@@ -251,13 +253,8 @@ export const reportMessage = async (userId: number, messageId: number, reason: s
   return { reportId: report.id }
 }
 
-export const streamerReply = async (userId: number, messageId: number, content: string, replyType: string = 'public') => {
-  const lastMessage = await redis.get(`rate_limit:msg:${userId}`)
-  if (lastMessage) {
-    throw new AppError('发送过于频繁，请20秒后再试', 429)
-  }
-
-  await redis.set(`rate_limit:msg:${userId}`, '1', 'EX', 20)
+export const streamerReply = async (userId: bigint, messageId: bigint, content: string, replyType: string = 'public') => {
+  await checkMessageRateLimit(userId)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -284,13 +281,8 @@ export const streamerReply = async (userId: number, messageId: number, content: 
   }
 }
 
-export const privateReply = async (userId: number, messageId: number, content: string) => {
-  const lastMessage = await redis.get(`rate_limit:msg:${userId}`)
-  if (lastMessage) {
-    throw new AppError('发送过于频繁，请20秒后再试', 429)
-  }
-
-  await redis.set(`rate_limit:msg:${userId}`, '1', 'EX', 20)
+export const privateReply = async (userId: bigint, messageId: bigint, content: string) => {
+  await checkMessageRateLimit(userId)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -333,7 +325,7 @@ export const privateReply = async (userId: number, messageId: number, content: s
   }
 }
 
-export const getPrivateReplies = async (messageId: number, userId: number, userRole: string) => {
+export const getPrivateReplies = async (messageId: bigint, userId: bigint, userRole: string) => {
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
     throw new AppError('消息不存在', 404)
@@ -343,8 +335,8 @@ export const getPrivateReplies = async (messageId: number, userId: number, userR
     throw new AppError('管理员无权查看私密回复', 403)
   }
 
-  const whereClause: any = { message_id: messageId }
-  
+  const whereClause: { message_id: bigint; target_user_id?: bigint } = { message_id: messageId }
+
   if (userRole === 'fan') {
     whereClause.target_user_id = userId
   }
