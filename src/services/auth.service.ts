@@ -30,11 +30,12 @@ export const getCaptcha = async () => {
   }
 }
 
-export const register = async ({ username, password, captchaId, captchaText }: {
+export const register = async ({ username, password, captchaId, captchaText, avatarId }: {
   username: string
   password: string
   captchaId: string
   captchaText: string
+  avatarId?: bigint
 }) => {
   const storedCaptcha = await redis.get(REDIS_KEYS.captcha(captchaId))
   if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
@@ -48,6 +49,13 @@ export const register = async ({ username, password, captchaId, captchaText }: {
     throw new AppError('用户名已存在', 409)
   }
 
+  if (avatarId) {
+    const avatar = await prisma.avatars.findUnique({ where: { id: avatarId } })
+    if (!avatar) {
+      throw new AppError('头像不存在', 404)
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 10)
 
   const user = await prisma.users.create({
@@ -56,12 +64,20 @@ export const register = async ({ username, password, captchaId, captchaText }: {
       password_hash: passwordHash,
       nickname: username,
       role: 'fan',
-      status: 'active'
+      status: 'active',
+      avatar_id: avatarId ?? null
     },
     select: { id: true }
   })
 
   return { userId: user.id }
+}
+
+export const getRegisterAvatars = async () => {
+  return prisma.avatars.findMany({
+    orderBy: { sort_order: 'desc' },
+    select: { id: true, url: true }
+  })
 }
 
 export const login = async ({ username, password }: {
@@ -148,6 +164,7 @@ export const getMe = async (userId: bigint) => {
 
 export default {
   getCaptcha,
+  getRegisterAvatars,
   register,
   login,
   logout,

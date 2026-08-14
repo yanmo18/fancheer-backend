@@ -43,6 +43,22 @@ export const getPrivateMessages = async (req: UserRequest, res: Response) => {
   return res.json(success(result))
 }
 
+export const getSentPrivateMessages = async (req: UserRequest, res: Response) => {
+  const userRole = req.user?.role
+  const { page, pageSize } = parsePagination(req.query.page, req.query.pageSize)
+
+  if (userRole !== 'fan') {
+    return res.json(fail('仅粉丝可调用此接口', 403))
+  }
+
+  const result = await chatService.getSentPrivateMessages(
+    userIdFromRequest(req.user?.id),
+    page,
+    pageSize
+  )
+  return res.json(success(result))
+}
+
 export const sendMessage = async (req: UserRequest, res: Response) => {
   const { content, type = 'public' } = req.body
   const sanitizedContent = sanitize(content)

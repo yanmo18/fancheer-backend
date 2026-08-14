@@ -12,11 +12,12 @@
 
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
-import { getCaptcha, register, login, logout, getMe } from '../controllers/auth.controller'
+import { getCaptcha, getRegisterAvatars, register, login, logout, getMe } from '../controllers/auth.controller'
 
 const router = Router()
 
 router.get('/captcha', getCaptcha)
+router.get('/avatars', getRegisterAvatars)
 router.post('/register', register)
 router.post('/login', login)
 router.post('/logout', authMiddleware, logout)

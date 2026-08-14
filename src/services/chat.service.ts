@@ -392,6 +392,44 @@ export const getPrivateReplies = async (messageId: bigint, userId: bigint, userR
   }))
 }
 
+export const getSentPrivateMessages = async (userId: bigint, page: number, pageSize: number) => {
+  const skip = (page - 1) * pageSize
+
+  const [list, total] = await Promise.all([
+    prisma.messages.findMany({
+      where: { sender_id: userId, type: 'private' },
+      skip,
+      take: pageSize,
+      orderBy: { created_at: 'desc' }
+    }),
+    prisma.messages.count({ where: { sender_id: userId, type: 'private' } })
+  ])
+
+  const messageIds = list.map(msg => msg.id)
+  const replies = messageIds.length
+    ? await prisma.private_replies.findMany({
+        where: { message_id: { in: messageIds }, target_user_id: userId },
+        select: { message_id: true }
+      })
+    : []
+  const repliedIds = new Set(replies.map(reply => reply.message_id.toString()))
+
+  return {
+    list: list.map(msg => ({
+      id: msg.id,
+      content: msg.content,
+      createdAt: msg.created_at,
+      hasReply: repliedIds.has(msg.id.toString())
+    })),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize)
+    }
+  }
+}
+
 export default {
   getPublicMessages,
   getPublicReplies,
@@ -399,6 +437,7 @@ export default {
   likeMessage,
   unlikeMessage,
   getPrivateMessages,
+  getSentPrivateMessages,
   reportMessage,
   streamerReply,
   privateReply,

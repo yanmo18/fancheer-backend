@@ -6,7 +6,8 @@
  * 接口列表：
  *   GET  /api/messages/public       - 获取公开消息列表（轮询用）
  *   GET  /api/messages/public-replies - 获取主播公开回复列表（全员可见，匿名展示）
- *   GET  /api/messages/private      - 获取我的私密消息列表（仅粉丝）
+ *   GET  /api/messages/private/sent - 获取我发出的私密留言（仅粉丝）
+ *   GET  /api/messages/private      - 获取博主对我的私密回复（仅粉丝）
  *   POST /api/messages              - 发送消息（公开/私密）
  *   POST /api/messages/:id/like     - 点赞消息
  *   DELETE /api/messages/:id/like   - 取消点赞
@@ -23,6 +24,7 @@ import {
   getPublicMessages, 
   getPublicReplies,
   getPrivateMessages, 
+  getSentPrivateMessages,
   sendMessage, 
   likeMessage, 
   unlikeMessage,
@@ -36,6 +38,7 @@ const router = Router()
 
 router.get('/public', authMiddleware, getPublicMessages)
 router.get('/public-replies', authMiddleware, getPublicReplies)
+router.get('/private/sent', authMiddleware, getSentPrivateMessages)
 router.get('/private', authMiddleware, getPrivateMessages)
 router.post('/', authMiddleware, sendMessage)
 router.post('/:id/like', authMiddleware, likeMessage)

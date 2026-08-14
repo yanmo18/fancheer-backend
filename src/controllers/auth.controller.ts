@@ -6,7 +6,7 @@ import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
 import { validateUsername, validatePassword } from '../utils/validate'
-import { userIdFromRequest } from '../utils/id'
+import { parseOptionalId, userIdFromRequest } from '../utils/id'
 import authService from '../services/auth.service'
 
 export const getCaptcha = async (_req: UserRequest, res: Response) => {
@@ -14,8 +14,13 @@ export const getCaptcha = async (_req: UserRequest, res: Response) => {
   return res.json(success(result))
 }
 
+export const getRegisterAvatars = async (_req: UserRequest, res: Response) => {
+  const result = await authService.getRegisterAvatars()
+  return res.json(success(result))
+}
+
 export const register = async (req: UserRequest, res: Response) => {
-  const { username, password, captchaId, captchaText, agreement } = req.body
+  const { username, password, captchaId, captchaText, agreement, avatarId } = req.body
 
   if (!agreement) return res.json(fail('请勾选用户协议', 400))
 
@@ -25,7 +30,13 @@ export const register = async (req: UserRequest, res: Response) => {
   const passwordError = validatePassword(password)
   if (passwordError) return res.json(fail(passwordError, 400))
 
-  const result = await authService.register({ username, password, captchaId, captchaText })
+  const result = await authService.register({
+    username,
+    password,
+    captchaId,
+    captchaText,
+    avatarId: parseOptionalId(avatarId)
+  })
   return res.json(success(result, '注册成功'))
 }
 
