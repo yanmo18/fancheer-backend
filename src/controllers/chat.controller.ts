@@ -91,7 +91,7 @@ export const reportMessage = async (req: UserRequest, res: Response) => {
 
 export const streamerReply = async (req: UserRequest, res: Response) => {
   const { id } = req.params
-  const { content, replyType = 'public' } = req.body
+  const { content } = req.body
   const sanitizedContent = sanitize(content)
   const error = validateMessage(sanitizedContent)
   if (error) return res.json(fail(error, 400))
@@ -102,8 +102,7 @@ export const streamerReply = async (req: UserRequest, res: Response) => {
   const result = await chatService.streamerReply(
     userIdFromRequest(req.user?.id),
     parseId(id, '消息ID'),
-    sanitizedContent,
-    replyType
+    sanitizedContent
   )
   return res.json(success(result, '回复成功'))
 }

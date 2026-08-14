@@ -190,7 +190,10 @@ export const getPrivateMessages = async (userId: bigint, page: number, pageSize:
 
   const [list, total] = await Promise.all([
     prisma.private_replies.findMany({
-      where: { target_user_id: userId, is_public: true },
+      where: {
+        target_user_id: userId,
+        messages: { type: 'private' }
+      },
       skip,
       take: pageSize,
       orderBy: { created_at: 'desc' },
@@ -199,7 +202,12 @@ export const getPrivateMessages = async (userId: bigint, page: number, pageSize:
         users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatars: true } }
       }
     }),
-    prisma.private_replies.count({ where: { target_user_id: userId, is_public: true } })
+    prisma.private_replies.count({
+      where: {
+        target_user_id: userId,
+        messages: { type: 'private' }
+      }
+    })
   ])
 
   return {
@@ -253,7 +261,7 @@ export const reportMessage = async (userId: bigint, messageId: bigint, reason: s
   return { reportId: report.id }
 }
 
-export const streamerReply = async (userId: bigint, messageId: bigint, content: string, replyType: string = 'public') => {
+export const streamerReply = async (userId: bigint, messageId: bigint, content: string) => {
   await checkMessageRateLimit(userId)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
@@ -261,23 +269,47 @@ export const streamerReply = async (userId: bigint, messageId: bigint, content: 
     throw new AppError('消息不存在', 404)
   }
 
-  const replyMessage = await prisma.messages.create({
+  if (message.type !== 'public') {
+    throw new AppError('仅可回复公开留言', 400)
+  }
+
+  const reply = await prisma.private_replies.create({
     data: {
-      sender_id: userId,
+      message_id: messageId,
+      streamer_id: userId,
+      target_user_id: message.sender_id,
       content,
-      type: replyType === 'private' ? 'private' : 'public'
+      is_public: true
     },
-    select: { id: true, content: true, type: true, created_at: true }
+    select: {
+      id: true,
+      message_id: true,
+      streamer_id: true,
+      target_user_id: true,
+      content: true,
+      is_public: true,
+      created_at: true
+    }
+  })
+
+  await prisma.admin_logs.create({
+    data: {
+      admin_id: userId,
+      action: 'create_streamer_reply',
+      target_type: 'private_reply',
+      target_id: reply.id,
+      detail: `博主公开回复留言 ${messageId}`
+    }
   })
 
   return {
-    id: replyMessage.id,
-    messageId,
-    streamerId: userId,
-    targetUserId: message.sender_id,
-    content: replyMessage.content,
-    replyType,
-    createdAt: replyMessage.created_at
+    id: reply.id,
+    messageId: reply.message_id,
+    streamerId: reply.streamer_id,
+    targetUserId: reply.target_user_id,
+    content: reply.content,
+    isPublic: reply.is_public,
+    createdAt: reply.created_at
   }
 }
 
@@ -299,7 +331,7 @@ export const privateReply = async (userId: bigint, messageId: bigint, content: s
       streamer_id: userId,
       target_user_id: message.sender_id,
       content,
-      is_public: true
+      is_public: false
     },
     select: { id: true, message_id: true, streamer_id: true, target_user_id: true, content: true, is_public: true, created_at: true }
   })
