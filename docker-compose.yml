@@ -1,0 +1,74 @@
+# Fancheer 全栈 Docker Compose
+# 前置：fancheer-backend 与 fancheer-frontend 为同级目录
+#
+# 启动：
+#   cp .env.docker.example .env.docker
+#   docker compose --env-file .env.docker up -d --build
+
+services:
+  mysql:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-fancheer}
+      MARIADB_USER: ${MYSQL_USER:-fancheer}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: mysql://${MYSQL_USER:-fancheer}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-fancheer}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: 0
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      SEED_ON_START: ${SEED_ON_START:-false}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../fancheer-frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '${HTTP_PORT:-8080}:80'
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  redis_data:
+  uploads_data:

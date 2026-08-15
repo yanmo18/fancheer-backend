@@ -95,7 +95,14 @@ export const deleteSensitiveWord = async (req: UserRequest, res: Response) => {
 
 export const getLogs = async (req: UserRequest, res: Response) => {
   const { page, pageSize } = parsePagination(req.query.page, req.query.pageSize)
-  const result = await adminService.getLogs(page, pageSize)
+  const { action, keyword, operator, startDate, endDate } = req.query
+  const result = await adminService.getLogs(page, pageSize, {
+    action: typeof action === 'string' ? action : undefined,
+    keyword: typeof keyword === 'string' ? keyword : undefined,
+    operator: typeof operator === 'string' ? operator : undefined,
+    startDate: typeof startDate === 'string' ? startDate : undefined,
+    endDate: typeof endDate === 'string' ? endDate : undefined
+  })
   return res.json(success(result))
 }
 

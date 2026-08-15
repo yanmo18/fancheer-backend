@@ -88,6 +88,17 @@ pnpm prisma:studio      # 可视化查看/编辑数据库
 
 > Redis 用于缓存（验证码、JWT 黑名单、限流），**不能**用来查看 MySQL 数据表。查看数据请用 `pnpm prisma:studio`。
 
+### Docker 一键部署
+
+需与 [fancheer-frontend](https://github.com/yanmo18/fancheer-frontend) 同级目录：
+
+```bash
+cp .env.docker.example .env.docker   # 修改 JWT_SECRET、数据库密码等
+pnpm docker:up                       # 或 docker compose --env-file .env.docker up -d --build
+```
+
+访问 http://localhost:8080 。完整说明见 [docs/部署指南.md](docs/部署指南.md)。
+
 ## 文档导航
 
 | 文档 | 说明 |
@@ -99,6 +110,7 @@ pnpm prisma:studio      # 可视化查看/编辑数据库
 | [docs/API-接口约定.md](docs/API-接口约定.md) | 前后端对接规范 + 接口速查表 |
 | [docs/数据库指南.md](docs/数据库指南.md) | Schema、迁移、Seed |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | 历史变更记录 |
+| [docs/部署指南.md](docs/部署指南.md) | Docker Compose 部署与生产运维 |
 
 ### 开发流程速览
 

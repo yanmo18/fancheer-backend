@@ -18,6 +18,7 @@
 | [API 接口约定](./API-接口约定.md) | 认证、响应格式、错误码、分页、上传规范 + 接口速查表 |
 | [数据库指南](./数据库指南.md) | Schema、迁移、Seed、Prisma Studio |
 | [CHANGELOG](./CHANGELOG.md) | 历史变更记录 |
+| [部署指南](./部署指南.md) | Docker Compose 一键部署、生产环境、故障排查 |
 
 ## 阅读路径
 

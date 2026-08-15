@@ -344,21 +344,70 @@ export const deleteSensitiveWord = async (id: bigint, adminId: bigint) => {
   await loadSensitiveWords()
 }
 
-export const getLogs = async (page: number, pageSize: number) => {
+export const getLogs = async (
+  page: number,
+  pageSize: number,
+  filters: {
+    action?: string
+    keyword?: string
+    operator?: string
+    startDate?: string
+    endDate?: string
+  } = {}
+) => {
   const skip = (page - 1) * pageSize
+  const whereClause: {
+    action?: string
+    detail?: { contains: string }
+    created_at?: { gte?: Date; lte?: Date }
+    users?: { OR: Array<{ nickname?: { contains: string }; username?: { contains: string } }> }
+  } = {}
+
+  if (filters.action) {
+    whereClause.action = filters.action
+  }
+
+  if (filters.keyword) {
+    whereClause.detail = { contains: filters.keyword }
+  }
+
+  if (filters.startDate || filters.endDate) {
+    whereClause.created_at = {}
+    if (filters.startDate) {
+      whereClause.created_at.gte = new Date(`${filters.startDate}T00:00:00`)
+    }
+    if (filters.endDate) {
+      whereClause.created_at.lte = new Date(`${filters.endDate}T23:59:59`)
+    }
+  }
+
+  if (filters.operator) {
+    whereClause.users = {
+      OR: [
+        { nickname: { contains: filters.operator } },
+        { username: { contains: filters.operator } }
+      ]
+    }
+  }
+
   const [list, total] = await Promise.all([
     prisma.admin_logs.findMany({
+      where: whereClause,
       skip,
       take: pageSize,
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
+      include: {
+        users: { select: { nickname: true, username: true } }
+      }
     }),
-    prisma.admin_logs.count()
+    prisma.admin_logs.count({ where: whereClause })
   ])
 
   return {
     list: list.map(log => ({
       id: log.id,
       adminId: log.admin_id,
+      adminNickname: log.users?.nickname || log.users?.username || '',
       action: log.action,
       targetType: log.target_type,
       targetId: log.target_id,
