@@ -6,7 +6,7 @@
 
 1. 按 **7 天学习计划** 逐日推进，不要跳步
 2. 每天「阅读 → 动手 → 复盘」三步走
-3. 遇到不懂的概念，查对应章节（§1–§12）
+3. 遇到不懂的概念，查对应章节（§1–§13）
 4. 所有命令在项目根目录执行
 
 ---
@@ -22,6 +22,9 @@
 | Day 5 | 留言互动模块 | §4（chat 为例） | 发公开/私密留言，点赞，举报 |
 | Day 6 | 管理后台 CRUD | §11 + banner 源码 | 走一遍 Banner 增删改查 |
 | Day 7 | 安全与基建 | §7–§9 | 触发限流和敏感词拦截 |
+| 可选 | Docker 与部署 | §13 + [部署指南](./部署指南.md) | 用 Docker 一键跑全栈，理解镜像/容器/Compose |
+
+> **Day 1–7 用 `pnpm dev` 学后端即可，不必先装 Docker。** Docker 适合「不想手动装 MySQL/Redis」或「模拟线上环境」时再学，见 §13。
 
 ---
 
@@ -85,6 +88,7 @@ fancheer-backend/
 | **bcryptjs** | 密码加密 | 单向哈希，不可逆 |
 | **multer** | 文件上传 | 处理 multipart/form-data |
 | **sharp** | 图片处理 | 自动压缩、调整尺寸 |
+| **Docker** | 容器化部署 | 把应用和依赖打包，一键启动，环境一致（见 §13） |
 
 ---
 
@@ -439,6 +443,214 @@ curl -X POST http://localhost:3000/api/checkin \
 
 ---
 
+## §13 Docker 入门（零基础详解）
+
+> 本章回答三个问题：**Docker 是什么？为什么要装？和 Fancheer 项目有什么关系？**  
+> 操作步骤见 [部署指南](./部署指南.md)；本章侧重「弄懂概念」。
+
+### 13.1 先用一句话理解 Docker
+
+**Docker 把「程序 + 运行环境 + 依赖」一起打包成标准盒子（容器），在任何电脑上都能用同样方式跑起来。**
+
+可以把它想成**集装箱**：
+
+| 类比 | 传统部署 | Docker |
+|------|----------|--------|
+| 货物 | 你的 Node 代码 | 后端/前端应用 |
+| 运输方式 | 每台机器自己装 Node、MySQL、Redis，版本可能不一致 | 镜像里已经带好版本，拷过去就能跑 |
+| 好处 | 灵活 | **「在我电脑上能跑」→「在服务器上也能跑」** |
+
+### 13.2 为什么 Fancheer 需要 Docker？
+
+Fancheer 不是单个程序，而是一**套系统**：
+
+```mermaid
+flowchart TB
+    subgraph need [跑起来至少需要]
+        FE[前端 Vue 静态页]
+        BE[后端 Express API]
+        DB[(MySQL 数据库)]
+        RD[(Redis 缓存)]
+    end
+    User[浏览器] --> FE
+    FE --> BE
+    BE --> DB
+    BE --> RD
+```
+
+**不用 Docker 时**（本地开发常见做法）：
+
+1. 自己安装 MySQL/MariaDB，建库、配账号
+2. 自己安装 Redis 并启动
+3. 后端 `pnpm install` → 配 `.env` → `pnpm dev`
+4. 前端再开一个终端 `pnpm dev`
+5. 换一台电脑或给同学部署，**重复上述全部步骤**，还容易因版本不同踩坑
+
+**用 Docker 时**：
+
+1. 安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)（Windows/Mac）或 Linux 上的 Docker Engine
+2. 复制 `.env.docker.example` → `.env.docker`，改几个密码
+3. 执行一条命令：`docker compose --env-file .env.docker up -d --build`
+4. Docker 会自动：拉取 MySQL/Redis 镜像、构建前后端、连好网络、初始化数据库
+
+**所以 Docker 的用处是：简化「装环境 + 启动整套服务」，并保证大家跑的是同一套版本。**
+
+### 13.3 学习 Docker 和学后端的关系
+
+| 阶段 | 建议 | 原因 |
+|------|------|------|
+| Day 1–7 学代码 | **不必装 Docker** | 用 README 的 `pnpm dev` + 本机 MySQL/Redis 更直观，改代码立刻热重载 |
+| 想一键跑全站 | 可以装 Docker | 省掉手动配库的步骤 |
+| 准备上线 | 建议学 Docker | 和线上部署方式接近 |
+
+**结论：Docker 是部署工具，不是学 Express/Prisma 的前置条件。**
+
+### 13.4 四个核心概念（必记）
+
+#### 1. 镜像（Image）
+
+- **是什么**：只读模板，像「安装光盘」或「类定义」
+- **例子**：`mariadb:10.11`、`redis:7-alpine`、项目里的 `Dockerfile` 构建出的 backend/frontend 镜像
+- **特点**：可以反复用来创建很多容器，本身不改动
+
+#### 2. 容器（Container）
+
+- **是什么**：镜像运行起来的**实例**，像「正在运行的进程」
+- **例子**：`docker compose ps` 里看到的 `backend-1`、`mysql-1`
+- **特点**：删容器数据可能丢（除非用了卷），可以随时停、启、重建
+
+#### 3. 数据卷（Volume）
+
+- **是什么**：容器外的持久化存储，重启/重建容器**数据还在**
+- **Fancheer 里**：
+  - `mysql_data` — 用户、留言、内容等表数据
+  - `redis_data` — Redis 持久化（可选）
+  - `uploads_data` — 上传的图片、音频
+
+> ⚠️ `docker compose down -v` 会**删除卷**，等于清空数据库和上传文件，仅测试环境使用。
+
+#### 4. Docker Compose
+
+- **是什么**：一个 YAML 文件（`docker-compose.yml`）描述**多个容器**如何一起启动
+- **作用**：一条命令启动 mysql + redis + backend + frontend，并配置它们之间的网络和环境变量
+
+### 13.5 Fancheer 的 docker-compose 里有什么？
+
+| 服务名 | 镜像来源 | 干什么 | 对外端口 |
+|--------|----------|--------|----------|
+| **mysql** | 官方 MariaDB | 存所有业务数据 | 仅容器内（不暴露到本机） |
+| **redis** | 官方 Redis | 验证码、限流、JWT 黑名单 | 仅容器内 |
+| **backend** | 本仓库 `Dockerfile` 构建 | Express API、Prisma、上传目录 | 仅容器内 `:3000` |
+| **frontend** | 前端仓库 `Dockerfile` 构建 | Nginx 提供网页，并把 `/api`、`/uploads` 转给 backend | **本机 `:8080`**（可改 `HTTP_PORT`） |
+
+浏览器访问流程：
+
+```
+你打开 http://localhost:8080
+  → frontend 容器（Nginx）返回 Vue 页面
+  → 页面请求 /api/... 
+  → Nginx 转发到 backend:3000
+  → backend 读写 mysql、redis
+```
+
+**这和开发时 Vite 的 proxy 是同一思路**：前端只认一个域名，API 由服务器反代，避免跨域问题。
+
+### 13.6 安装 Docker Desktop 到底装了什么？
+
+在 Windows 上安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 后，你得到：
+
+| 组件 | 作用 |
+|------|------|
+| **Docker Engine** | 真正创建/运行容器的引擎 |
+| **Docker Compose** | 解析 `docker-compose.yml`，批量启停服务 |
+| **轻量 Linux 虚拟机**（WSL2） | Windows 上容器实际跑在 Linux 环境里 |
+
+安装完成后，在 PowerShell 里能执行：
+
+```powershell
+docker --version
+docker compose version
+```
+
+即表示可用。
+
+**占用**：Docker Desktop 空闲时也会占一些内存（通常几百 MB 到 1GB+），笔记本内存紧张时可只在需要部署时打开。
+
+### 13.7 和「手动安装」对比一张表
+
+| 维度 | 手动装 MySQL + Redis + pnpm dev | Docker Compose |
+|------|--------------------------------|----------------|
+| 首次搭建 | 步骤多，易配错连接串 | 一条 compose 命令 |
+| 改后端代码 | 热重载，**快** | 需重建镜像才更新容器内代码，**慢** |
+| 环境一致性 | 每人 Node/MySQL 版本可能不同 | 镜像锁定版本 |
+| 适合场景 | **日常开发、学代码** | **演示、测试部署、上云前验证** |
+| 数据在哪 | 本机 MySQL 数据目录 | Docker 卷 `mysql_data` |
+
+### 13.8 项目里和 Docker 相关的文件
+
+```
+fancheer-backend/
+├── Dockerfile              # 如何把后端打成镜像（装依赖、编译、启动脚本）
+├── docker/
+│   └── entrypoint.sh       # 容器启动时：等 MySQL → prisma db push → 可选 seed → node
+├── docker-compose.yml      # 四个服务的编排
+├── .env.docker.example     # Compose 用的环境变量模板
+└── docs/部署指南.md        # 逐步操作说明
+
+fancheer-frontend/
+├── Dockerfile              # 构建 Vue → 放进 Nginx
+└── nginx.conf              # 静态文件 + /api、/uploads 反代
+```
+
+**Dockerfile** 回答：「这个服务镜像里要装什么、怎么启动？」  
+**docker-compose.yml** 回答：「有哪些服务、谁连谁、端口和环境变量是什么？」
+
+### 13.9 第一次动手（可选实验 11）
+
+前置：已安装 Docker Desktop，且 `fancheer-backend` 与 `fancheer-frontend` 为**同级目录**。
+
+```powershell
+cd fancheer-backend
+copy .env.docker.example .env.docker
+# 用记事本编辑 .env.docker：至少改 JWT_SECRET、MYSQL_ROOT_PASSWORD、MYSQL_PASSWORD
+
+docker compose --env-file .env.docker up -d --build
+```
+
+等待数分钟后：
+
+| 检查项 | 命令或地址 |
+|--------|------------|
+| 容器是否都在跑 | `docker compose --env-file .env.docker ps` |
+| 网站 | 浏览器打开 http://localhost:8080 |
+| 健康检查 | http://localhost:8080/api/health |
+| 看后端日志 | `docker compose --env-file .env.docker logs -f backend` |
+| 停止全部 | `docker compose --env-file .env.docker down` |
+
+首次若 `SEED_ON_START=true`，可用 `streamer` / `admin` / `fan001`，密码 `123456` 登录。
+
+### 13.10 常见误解 FAQ
+
+**Q: 装了 Docker 就不用学 Node/MySQL 了吗？**  
+A: 要学。Docker 只是帮你**启动**这些组件，业务代码仍在 `src/`，数据库表结构仍在 `prisma/schema.prisma`。
+
+**Q: Docker 里的数据库和本机 MySQL 是同一个吗？**  
+A: **不是。** 容器里是独立实例，和本机 3306 端口互不影响（除非你在 compose 里特意映射端口）。
+
+**Q: 我在 Docker 里改了代码，为什么网页没变？**  
+A: 容器里是**构建时拷贝进去**的代码，不是挂载本地目录。开发请继续用 `pnpm dev`；改 Docker 部署需重新 `docker compose up --build`。
+
+**Q: Docker 和虚拟机（VMware/VirtualBox）一样吗？**  
+A: 不一样。虚拟机模拟整台电脑，很重；Docker 容器共享宿主机内核，**更轻、启动更快**，专门用来跑单个应用。
+
+**Q: 生产环境必须用 Docker 吗？**  
+A: 不必须。也可以 VPS 上手动 `pnpm build` + Nginx + systemd，见 [部署指南 § 非 Docker 部署](./部署指南.md#非-docker-部署手动)。
+
+**Q: `pnpm docker:up` 和 `docker compose ...` 有什么区别？**  
+A: 前者是 `package.json` 里写的快捷脚本，本质就是后者。
+
+---
+
 ## §12 常见问题 FAQ
 
 ### Q: 启动报 JWT_SECRET 未配置？
@@ -473,6 +685,14 @@ A: 阅读 [API 接口约定](./API-接口约定.md)，重点关注认证头、�
 
 A: 早期本地文档目录（已 gitignore）。现在统一使用 `docs/` 目录。
 
+### Q: Docker 是干什么的？我必须装吗？
+
+A: Docker 用来**一键启动** MySQL + Redis + 前后端，环境和别人一致。**学后端代码不必先装**；想省事部署或模拟线上时再装。详见 **§13 Docker 入门** 与 [部署指南](./部署指南.md)。
+
+### Q: Docker 启动后端口和 dev 一样吗？
+
+A: 不完全一样。Compose 默认网站入口是 **http://localhost:8080**（Nginx）；本地 dev 是前端 `:5173`、后端 `:3001`（或 `.env` 里的 `PORT`）。
+
 ---
 
 ## 相关文档
@@ -484,3 +704,4 @@ A: 早期本地文档目录（已 gitignore）。现在统一使用 `docs/` 目�
 | [数据库指南](./数据库指南.md) | Schema、迁移、Seed |
 | [项目定位与范围](./项目定位与范围.md) | 产品边界与不开发功能 |
 | [项目 README](../README.md) | 项目入口与快速开始 |
+| [部署指南](./部署指南.md) | Docker 操作步骤与生产运维 |

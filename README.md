@@ -105,7 +105,7 @@ pnpm docker:up                       # 或 docker compose --env-file .env.docker
 |------|------|
 | [docs/项目定位与范围.md](docs/项目定位与范围.md) | **产品边界**：做什么 / 不做什么 |
 | [docs/README.md](docs/README.md) | 文档中心索引 |
-| [docs/SOP-学习手册.md](docs/SOP-学习手册.md) | **零基础必读**，7 天学习计划 |
+| [docs/SOP-学习手册.md](docs/SOP-学习手册.md) | **零基础必读**，7 天学习计划 + **§13 Docker 入门** |
 | [docs/SOP-开发流程.md](docs/SOP-开发流程.md) | 日常开发标准操作流程 |
 | [docs/API-接口约定.md](docs/API-接口约定.md) | 前后端对接规范 + 接口速查表 |
 | [docs/数据库指南.md](docs/数据库指南.md) | Schema、迁移、Seed |

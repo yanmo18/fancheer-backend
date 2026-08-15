@@ -297,6 +297,19 @@ pnpm exec prisma db push    # 直接同步 schema，不生成迁移文件
 
 ## 7. 生产部署要点
 
+> Docker 概念入门见 [SOP 学习手册 §13](./SOP-学习手册.md#13-docker-入门零基础详解)；一键部署见 [部署指南](./部署指南.md)。
+
+### 方式 A：Docker Compose（推荐新手部署）
+
+```bash
+cp .env.docker.example .env.docker   # 修改 JWT_SECRET、数据库密码
+pnpm docker:up                       # 或 docker compose --env-file .env.docker up -d --build
+```
+
+访问 http://localhost:8080 。日常改代码仍用 `pnpm dev`，不必每次重建 Docker。
+
+### 方式 B：手动部署（传统 VPS）
+
 1. 设置强随机 `JWT_SECRET`
 2. 配置 `CORS_ORIGIN` 为前端域名（逗号分隔）
 3. 构建：`pnpm build`
