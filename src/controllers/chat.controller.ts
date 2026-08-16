@@ -125,7 +125,7 @@ export const streamerReply = async (req: UserRequest, res: Response) => {
 
 export const privateReply = async (req: UserRequest, res: Response) => {
   const { id } = req.params
-  const { content } = req.body
+  const { content, isPublic } = req.body
   const sanitizedContent = sanitize(content)
   const error = validateMessage(sanitizedContent)
   if (error) return res.json(fail(error, 400))
@@ -136,9 +136,10 @@ export const privateReply = async (req: UserRequest, res: Response) => {
   const result = await chatService.privateReply(
     userIdFromRequest(req.user?.id),
     parseId(id, '消息ID'),
-    sanitizedContent
+    sanitizedContent,
+    Boolean(isPublic)
   )
-  return res.json(success(result, '私密回复成功'))
+  return res.json(success(result, isPublic ? '已公开发布回复' : '私密回复成功'))
 }
 
 export const getPrivateReplies = async (req: UserRequest, res: Response) => {

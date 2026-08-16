@@ -5,6 +5,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success } from '../utils/response'
+import { sanitize } from '../utils/sanitize'
 import { parseId, userIdFromRequest } from '../utils/id'
 import { parsePagination } from '../utils/pagination'
 import reportsService from '../services/reports.service'
@@ -29,7 +30,12 @@ export const getReportDetail = async (req: UserRequest, res: Response) => {
 
 export const resolveReport = async (req: UserRequest, res: Response) => {
   const { id } = req.params
-  await reportsService.resolveReport(parseId(id), userIdFromRequest(req.user?.id))
+  const { resolutionNote } = req.body
+  await reportsService.resolveReport(
+    parseId(id),
+    userIdFromRequest(req.user?.id),
+    typeof resolutionNote === 'string' ? resolutionNote.trim() : ''
+  )
   return res.json(success(null, '工单已办结'))
 }
 

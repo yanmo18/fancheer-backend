@@ -50,6 +50,7 @@ export const getReports = async (page: number, pageSize: number, status?: string
         : '',
       reason: report.reason,
       status: report.status,
+      resolutionNote: report.resolution_note || '',
       createdAt: report.created_at,
       resolvedAt: report.resolved_at
     })),
@@ -111,13 +112,14 @@ export const getReportDetail = async (id: bigint) => {
     messageSenderUsername: sender?.username || '',
     reason: report.reason,
     status: report.status,
+    resolutionNote: report.resolution_note || '',
     resolvedAt: report.resolved_at,
     createdAt: report.created_at,
     relatedReportCount
   }
 }
 
-export const resolveReport = async (id: bigint, adminId: bigint) => {
+export const resolveReport = async (id: bigint, adminId: bigint, resolutionNote?: string) => {
   const report = await prisma.reports.findUnique({ where: { id } })
   if (!report) {
     throw new AppError('举报工单不存在', 404)
@@ -127,9 +129,14 @@ export const resolveReport = async (id: bigint, adminId: bigint) => {
     throw new AppError('工单已办结', 400)
   }
 
+  const note = resolutionNote?.trim()
+  if (!note) {
+    throw new AppError('请填写处理结果说明', 400)
+  }
+
   await prisma.reports.update({
     where: { id },
-    data: { status: 'resolved', resolved_at: new Date() }
+    data: { status: 'resolved', resolution_note: note, resolved_at: new Date() }
   })
 
   await prisma.admin_logs.create({
@@ -138,7 +145,7 @@ export const resolveReport = async (id: bigint, adminId: bigint) => {
       action: 'resolve_report',
       target_type: 'report',
       target_id: id,
-      detail: `办结举报工单: ${id}`
+      detail: `办结举报工单: ${id}，处理说明: ${note}`
     }
   })
 }

@@ -19,7 +19,8 @@ export const getUsers = async (req: UserRequest, res: Response) => {
 
 export const banUser = async (req: UserRequest, res: Response) => {
   const { id } = req.params
-  await adminService.banUser(parseId(id), userIdFromRequest(req.user?.id))
+  const { remark } = req.body
+  await adminService.banUser(parseId(id), userIdFromRequest(req.user?.id), sanitize(remark))
   return res.json(success(null, '用户已封禁'))
 }
 

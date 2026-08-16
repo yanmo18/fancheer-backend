@@ -168,21 +168,33 @@ export const getPublicReplies = async (before?: string, limit: number = 20) => {
     take: Math.min(limit, 20),
     orderBy: { created_at: 'desc' },
     include: {
-      messages: { select: { content: true } },
+      messages: {
+        select: {
+          content: true,
+          type: true,
+          users: { select: { nickname: true } }
+        }
+      },
       users_private_replies_streamer_idTousers: { select: { id: true, nickname: true, avatars: true } }
     }
   })
 
-  return replies.map(reply => ({
-    id: reply.id,
-    messageId: reply.message_id,
-    originalContent: reply.messages?.content || '',
-    streamerId: reply.streamer_id,
-    streamerNickname: reply.users_private_replies_streamer_idTousers?.nickname || '',
-    streamerAvatar: reply.users_private_replies_streamer_idTousers?.avatars?.url || '',
-    content: reply.content,
-    createdAt: reply.created_at
-  }))
+  return replies.map(reply => {
+    const fromPrivate = reply.messages?.type === 'private'
+    return {
+      id: reply.id,
+      messageId: reply.message_id,
+      originalContent: reply.messages?.content || '',
+      originalSenderNickname: fromPrivate
+        ? '匿名访客'
+        : reply.messages?.users?.nickname || '访客',
+      isAnonymous: fromPrivate,
+      streamerNickname: reply.users_private_replies_streamer_idTousers?.nickname || '',
+      streamerAvatar: reply.users_private_replies_streamer_idTousers?.avatars?.url || '',
+      content: reply.content,
+      createdAt: reply.created_at
+    }
+  })
 }
 
 export const getPrivateMessages = async (userId: bigint, page: number, pageSize: number) => {
@@ -313,7 +325,12 @@ export const streamerReply = async (userId: bigint, messageId: bigint, content: 
   }
 }
 
-export const privateReply = async (userId: bigint, messageId: bigint, content: string) => {
+export const privateReply = async (
+  userId: bigint,
+  messageId: bigint,
+  content: string,
+  isPublic: boolean = false
+) => {
   await checkMessageRateLimit(userId)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
@@ -331,7 +348,7 @@ export const privateReply = async (userId: bigint, messageId: bigint, content: s
       streamer_id: userId,
       target_user_id: message.sender_id,
       content,
-      is_public: false
+      is_public: isPublic
     },
     select: { id: true, message_id: true, streamer_id: true, target_user_id: true, content: true, is_public: true, created_at: true }
   })
@@ -339,10 +356,12 @@ export const privateReply = async (userId: bigint, messageId: bigint, content: s
   await prisma.admin_logs.create({
     data: {
       admin_id: userId,
-      action: 'create_private_reply',
+      action: isPublic ? 'create_public_private_reply' : 'create_private_reply',
       target_type: 'private_reply',
       target_id: reply.id,
-      detail: `主播回复消息 ${messageId}`
+      detail: isPublic
+        ? `博主公开回复私密留言 ${messageId}（发送者匿名展示）`
+        : `主播回复消息 ${messageId}`
     }
   })
 

@@ -38,6 +38,7 @@ export const getUsers = async (page: number, pageSize: number, role?: string, st
       avatar: user.avatars?.url || '',
       role: user.role,
       status: user.status,
+      banRemark: user.ban_remark || '',
       createdAt: user.created_at
     })),
     pagination: {
@@ -49,7 +50,7 @@ export const getUsers = async (page: number, pageSize: number, role?: string, st
   }
 }
 
-export const banUser = async (id: bigint, adminId: bigint) => {
+export const banUser = async (id: bigint, adminId: bigint, remark?: string) => {
   const user = await prisma.users.findUnique({ where: { id } })
   if (!user) {
     throw new AppError('用户不存在', 404)
@@ -59,9 +60,14 @@ export const banUser = async (id: bigint, adminId: bigint) => {
     throw new AppError('不能封禁协管员或站主', 400)
   }
 
+  const banRemark = remark?.trim()
+  if (!banRemark) {
+    throw new AppError('请填写封禁备注', 400)
+  }
+
   await prisma.users.update({
     where: { id },
-    data: { status: 'banned', updated_at: new Date() }
+    data: { status: 'banned', ban_remark: banRemark, updated_at: new Date() }
   })
 
   await prisma.admin_logs.create({
@@ -70,7 +76,7 @@ export const banUser = async (id: bigint, adminId: bigint) => {
       action: 'ban_user',
       target_type: 'user',
       target_id: id,
-      detail: `封禁用户: ${user.username}`
+      detail: `封禁用户: ${user.username}，备注: ${banRemark}`
     }
   })
 }
@@ -83,7 +89,7 @@ export const unbanUser = async (id: bigint, adminId: bigint) => {
 
   await prisma.users.update({
     where: { id },
-    data: { status: 'active', updated_at: new Date() }
+    data: { status: 'active', ban_remark: null, updated_at: new Date() }
   })
 
   await prisma.admin_logs.create({
