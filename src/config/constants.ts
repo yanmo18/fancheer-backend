@@ -42,6 +42,11 @@ export const REDIS_KEYS = {
   loginRateLimit: (username: string) => `rate_limit:login:${username}`,
 }
 
+export const BANNER = {
+  /** 首页轮播最多展示数量 */
+  MAX_COUNT: 8,
+} as const
+
 export const UPLOAD = {
   ALLOWED_CATEGORIES: ['images', 'banners', 'avatars', 'gallery', 'awards', 'activities', 'graph', 'songs'] as const,
   MAX_IMAGE_SIZE: 10 * 1024 * 1024,

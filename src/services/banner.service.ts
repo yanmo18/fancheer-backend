@@ -4,11 +4,21 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { BANNER } from '../config/constants'
+
+async function assertBannerLimit(excludeId?: bigint) {
+  const where = excludeId ? { id: { not: excludeId } } : {}
+  const count = await prisma.banners.count({ where })
+  if (count >= BANNER.MAX_COUNT) {
+    throw new AppError(`Banner 最多 ${BANNER.MAX_COUNT} 张`, 400)
+  }
+}
 
 export const getBanners = async () => {
   const banners = await prisma.banners.findMany({
     where: { is_visible: true },
     orderBy: { sort_order: 'desc' },
+    take: BANNER.MAX_COUNT,
     select: {
       id: true,
       title: true,
@@ -65,6 +75,8 @@ export const createBanner = async ({ title, imageUrl, linkUrl, sortOrder, isVisi
   sortOrder?: number
   isVisible?: boolean
 }, adminId: bigint) => {
+  await assertBannerLimit()
+
   const banner = await prisma.banners.create({
     data: {
       title: title || '',

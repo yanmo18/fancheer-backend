@@ -74,10 +74,15 @@ export const register = async ({ username, password, captchaId, captchaText, ava
 }
 
 export const getRegisterAvatars = async () => {
-  return prisma.avatars.findMany({
+  const avatars = await prisma.avatars.findMany({
     orderBy: { sort_order: 'desc' },
     select: { id: true, url: true }
   })
+
+  return avatars.map((avatar) => ({
+    id: avatar.id.toString(),
+    url: avatar.url
+  }))
 }
 
 export const login = async ({ username, password }: {
@@ -120,10 +125,11 @@ export const login = async ({ username, password }: {
     token,
     expiresIn: 604800,
     user: {
-      id: user.id,
+      id: user.id.toString(),
       username: user.username,
       nickname: user.nickname,
       avatar: avatar?.url || '',
+      avatarId: user.avatar_id ? user.avatar_id.toString() : null,
       role: user.role
     }
   }
@@ -152,11 +158,11 @@ export const getMe = async (userId: bigint) => {
   }
 
   return {
-    id: user.id,
+    id: user.id.toString(),
     username: user.username,
     nickname: user.nickname,
     avatar: user.avatars?.url || '',
-    avatarId: user.avatar_id || null,
+    avatarId: user.avatar_id ? user.avatar_id.toString() : null,
     role: user.role,
     createdAt: user.created_at
   }

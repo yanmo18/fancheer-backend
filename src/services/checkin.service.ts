@@ -12,8 +12,12 @@ import { TIMEZONE } from '../config/constants'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
+function todayCheckDate() {
+  return dayjs().tz(TIMEZONE).startOf('day').toDate()
+}
+
 export const checkin = async (userId: bigint) => {
-  const today = dayjs().tz(TIMEZONE).format('YYYY-MM-DD')
+  const today = todayCheckDate()
 
   const existingCheckin = await prisma.check_ins.findFirst({
     where: {
@@ -37,8 +41,8 @@ export const checkin = async (userId: bigint) => {
 }
 
 export const getCheckinCalendar = async (userId: bigint, year: number, month: number) => {
-  const startDate = dayjs().tz(TIMEZONE).year(year).month(month - 1).date(1).format('YYYY-MM-DD')
-  const endDate = dayjs().tz(TIMEZONE).year(year).month(month - 1).endOf('month').format('YYYY-MM-DD')
+  const startDate = dayjs().tz(TIMEZONE).year(year).month(month - 1).date(1).startOf('day').toDate()
+  const endDate = dayjs().tz(TIMEZONE).year(year).month(month - 1).endOf('month').startOf('day').toDate()
 
   const checkins = await prisma.check_ins.findMany({
     where: {
@@ -51,7 +55,7 @@ export const getCheckinCalendar = async (userId: bigint, year: number, month: nu
     select: { check_date: true }
   })
 
-  const checkedDates = checkins.map(c => dayjs(c.check_date).format('YYYY-MM-DD'))
+  const checkedDates = checkins.map(c => dayjs(c.check_date).tz(TIMEZONE).format('YYYY-MM-DD'))
 
   return {
     year,

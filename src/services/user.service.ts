@@ -30,10 +30,15 @@ export const updateAvatar = async (userId: bigint, avatarId: bigint) => {
 }
 
 export const getAvatars = async () => {
-  return prisma.avatars.findMany({
+  const avatars = await prisma.avatars.findMany({
     orderBy: { sort_order: 'desc' },
     select: { id: true, url: true }
   })
+
+  return avatars.map((avatar) => ({
+    id: avatar.id.toString(),
+    url: avatar.url
+  }))
 }
 
 export default {

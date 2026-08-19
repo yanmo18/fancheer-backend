@@ -12,6 +12,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx seed.ts",
+    "seed:activities": "tsx seed-activities.ts",
+    "seed:graph": "tsx seed-graph.ts",
+    "seed:avatars": "tsx seed-avatars.ts",
     "docker:up": "docker compose --env-file .env.docker up -d --build",
     "docker:down": "docker compose --env-file .env.docker down",
     "docker:logs": "docker compose --env-file .env.docker logs -f backend"
