@@ -17,9 +17,9 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import path from 'path'
 import requestLogger from './middlewares/requestLogger.middleware'
 import errorHandler from './middlewares/error.middleware'
+import { UPLOADS_DIR } from './config/paths'
 
 dotenv.config()
 
@@ -36,7 +36,7 @@ const corsOrigin = process.env.CORS_ORIGIN
 app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(s => s.trim()) } : undefined))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+app.use('/uploads', express.static(UPLOADS_DIR))
 
 app.get('/', (_req, res) => {
   res.json({

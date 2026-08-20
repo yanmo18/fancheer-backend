@@ -5,10 +5,30 @@
 import { prisma } from '../lib/prisma'
 import redis from '../config/redis'
 import AppError from '../utils/appError'
-import { EXPIRY_TIME, REDIS_KEYS } from '../config/constants'
+import { EXPIRY_TIME, REDIS_KEYS, REGEX } from '../config/constants'
 
 const getLikeCount = async (messageId: bigint) => {
   return prisma.likes.count({ where: { message_id: messageId } })
+}
+
+/** 游标分页：优先按消息/回复 ID 解析，兼容旧客户端传 ISO 时间 */
+async function resolveCursorCreatedAt(
+  before: string | undefined,
+  fetchCreatedAt: (id: bigint) => Promise<Date | null>,
+): Promise<Date | undefined> {
+  if (!before?.trim()) return undefined
+
+  const trimmed = before.trim()
+
+  if (REGEX.ID.test(trimmed)) {
+    const createdAt = await fetchCreatedAt(BigInt(trimmed))
+    return createdAt ?? undefined
+  }
+
+  const parsed = new Date(trimmed)
+  if (!Number.isNaN(parsed.getTime())) return parsed
+
+  return undefined
 }
 
 const checkMessageRateLimit = async (userId: bigint) => {
@@ -23,8 +43,16 @@ const checkMessageRateLimit = async (userId: bigint) => {
 export const getPublicMessages = async (before?: string, limit: number = 20, userId?: bigint) => {
   const whereClause: { type: 'public'; created_at?: { lt: Date } } = { type: 'public' }
 
-  if (before) {
-    whereClause.created_at = { lt: new Date(before) }
+  const cursorDate = await resolveCursorCreatedAt(before, async (id) => {
+    const row = await prisma.messages.findUnique({
+      where: { id, type: 'public' },
+      select: { created_at: true },
+    })
+    return row?.created_at ?? null
+  })
+
+  if (cursorDate) {
+    whereClause.created_at = { lt: cursorDate }
   }
 
   const messages = await prisma.messages.findMany({
@@ -159,8 +187,16 @@ export const unlikeMessage = async (userId: bigint, messageId: bigint) => {
 export const getPublicReplies = async (before?: string, limit: number = 20) => {
   const whereClause: { is_public: true; created_at?: { lt: Date } } = { is_public: true }
 
-  if (before) {
-    whereClause.created_at = { lt: new Date(before) }
+  const cursorDate = await resolveCursorCreatedAt(before, async (id) => {
+    const row = await prisma.private_replies.findUnique({
+      where: { id, is_public: true },
+      select: { created_at: true },
+    })
+    return row?.created_at ?? null
+  })
+
+  if (cursorDate) {
+    whereClause.created_at = { lt: cursorDate }
   }
 
   const replies = await prisma.private_replies.findMany({

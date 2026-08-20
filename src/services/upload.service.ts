@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Request } from 'express'
 import AppError from '../utils/appError'
 import { UPLOAD } from '../config/constants'
+import { uploadsSubdir } from '../config/paths'
 
 type MulterFile = NonNullable<Request['file']>
 
@@ -35,7 +36,7 @@ export const uploadImage = async (file: MulterFile, category?: string) => {
 
   const safeCategory = validateUploadCategory(category || 'images')
   const newFilename = `${uuidv4()}.jpg`
-  const uploadDir = path.join(__dirname, '../../uploads', safeCategory)
+  const uploadDir = uploadsSubdir(safeCategory)
 
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true })
@@ -68,7 +69,7 @@ export const uploadAudio = async (file: MulterFile) => {
   }
 
   const newFilename = `${uuidv4()}${ext}`
-  const uploadDir = path.join(__dirname, '../../uploads/audio')
+  const uploadDir = uploadsSubdir('audio')
 
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true })
