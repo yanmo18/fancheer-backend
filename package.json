@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx seed.ts",
+    "seed:uploads": "tsx seed-uploads.ts",
     "seed:activities": "tsx seed-activities.ts",
     "seed:graph": "tsx seed-graph.ts",
     "seed:avatars": "tsx seed-avatars.ts",

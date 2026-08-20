@@ -84,6 +84,7 @@ pnpm dev                      # 启动开发服务器 http://localhost:3000
 pnpm build              # 编译 TypeScript → dist/
 pnpm start              # 生产启动
 pnpm prisma:studio      # 可视化查看/编辑数据库
+pnpm seed:uploads       # 从前端 public/assets 生成 uploads 静态文件（不改动数据库）
 ```
 
 > Redis 用于缓存（验证码、JWT 黑名单、限流），**不能**用来查看 MySQL 数据表。查看数据请用 `pnpm prisma:studio`。

@@ -1,16 +1,16 @@
 import type { PrismaClient } from './generated/prisma/client'
 
 export const GRAPH_CHARACTER_DEFS = [
-  { name: 'Fancheer', avatar_url: '/assets/picture-01.jpg', bio: '博主 · 创作与音乐', is_center: true, sort_order: 1 },
-  { name: 'ZHENG', avatar_url: '/assets/picture-16.jpg', bio: '伙伴 · 同频创作', is_center: false, sort_order: 2 },
-  { name: '日常', avatar_url: '/assets/header.jpg', bio: '猫系分身 · 随拍记录', is_center: false, sort_order: 3 },
-  { name: '阿洛', avatar_url: '/assets/picture-02.jpg', bio: '视觉设计 · 封面合作', is_center: false, sort_order: 4 },
-  { name: '米娅', avatar_url: '/assets/picture-08.jpg', bio: '直播搭档 · 氛围组', is_center: false, sort_order: 5 },
-  { name: '小夜', avatar_url: '/assets/picture-03.jpg', bio: '词曲创作 · 深夜灵感', is_center: false, sort_order: 6 },
-  { name: '北辰', avatar_url: '/assets/picture-05.jpg', bio: '编曲同好 · 乐器搭子', is_center: false, sort_order: 7 },
-  { name: '柚子', avatar_url: '/assets/picture-11.jpg', bio: '同期好友 · 互相催更', is_center: false, sort_order: 8 },
-  { name: '云雀', avatar_url: '/assets/picture-06.jpg', bio: '邻居 · 线下小聚', is_center: false, sort_order: 9 },
-  { name: '星野', avatar_url: '/assets/picture-10.jpg', bio: '粉丝代表 · 活动应援', is_center: false, sort_order: 10 },
+  { name: 'Fancheer', avatar_url: '/uploads/graph/character-01.jpg', bio: '博主 · 创作与音乐', is_center: true, sort_order: 1 },
+  { name: 'ZHENG', avatar_url: '/uploads/graph/character-02.jpg', bio: '伙伴 · 同频创作', is_center: false, sort_order: 2 },
+  { name: '日常', avatar_url: '/uploads/graph/character-03.jpg', bio: '猫系分身 · 随拍记录', is_center: false, sort_order: 3 },
+  { name: '阿洛', avatar_url: '/uploads/graph/character-04.jpg', bio: '视觉设计 · 封面合作', is_center: false, sort_order: 4 },
+  { name: '米娅', avatar_url: '/uploads/graph/character-05.jpg', bio: '直播搭档 · 氛围组', is_center: false, sort_order: 5 },
+  { name: '小夜', avatar_url: '/uploads/graph/character-06.jpg', bio: '词曲创作 · 深夜灵感', is_center: false, sort_order: 6 },
+  { name: '北辰', avatar_url: '/uploads/graph/character-07.jpg', bio: '编曲同好 · 乐器搭子', is_center: false, sort_order: 7 },
+  { name: '柚子', avatar_url: '/uploads/graph/character-08.jpg', bio: '同期好友 · 互相催更', is_center: false, sort_order: 8 },
+  { name: '云雀', avatar_url: '/uploads/graph/character-09.jpg', bio: '邻居 · 线下小聚', is_center: false, sort_order: 9 },
+  { name: '星野', avatar_url: '/uploads/graph/character-10.jpg', bio: '粉丝代表 · 活动应援', is_center: false, sort_order: 10 },
 ] as const
 
 export const GRAPH_RELATION_DEFS: {

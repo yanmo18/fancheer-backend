@@ -13,7 +13,7 @@ import { UPLOAD } from '../config/constants'
 type MulterFile = NonNullable<Request['file']>
 
 const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
-const ALLOWED_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg']
+const ALLOWED_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.m4a']
 
 export const validateUploadCategory = (category: string): string => {
   if (!UPLOAD.ALLOWED_CATEGORIES.includes(category as typeof UPLOAD.ALLOWED_CATEGORIES[number])) {
@@ -60,7 +60,7 @@ export const uploadAudio = async (file: MulterFile) => {
   const ext = path.extname(file.originalname).toLowerCase()
 
   if (!ALLOWED_AUDIO_EXTENSIONS.includes(ext)) {
-    throw new AppError('不支持的音频格式，仅支持 mp3/wav/ogg', 400)
+    throw new AppError('不支持的音频格式，仅支持 mp3/wav/ogg/m4a', 400)
   }
 
   if (file.size > UPLOAD.MAX_AUDIO_SIZE) {

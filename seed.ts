@@ -1,12 +1,15 @@
 import { prisma } from './src/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { seedGraphData } from './graph-seed-data'
-import { seedGraphData } from './graph-seed-data'
+import { seedUploadFiles } from './seed-uploads'
 
 const seedData = async () => {
   console.log('🌱 开始初始化数据库种子数据...')
 
   try {
+    const uploadCount = seedUploadFiles()
+    console.log(`📁 uploads 种子文件就绪: ${uploadCount} 个`)
+
     console.log('🗑️ 清空现有数据...')
     await prisma.$transaction([
       prisma.messages.deleteMany(),
@@ -70,14 +73,14 @@ const seedData = async () => {
     console.log('🖼️ 创建头像数据...')
     await prisma.avatars.createMany({
       data: [
-        { url: '/assets/picture-01.jpg', sort_order: 10 },
-        { url: '/assets/picture-08.jpg', sort_order: 9 },
-        { url: '/assets/picture-16.jpg', sort_order: 8 },
-        { url: '/assets/picture-02.jpg', sort_order: 7 },
-        { url: '/assets/picture-03.jpg', sort_order: 6 },
-        { url: '/assets/picture-10.jpg', sort_order: 5 },
-        { url: '/assets/picture-11.jpg', sort_order: 4 },
-        { url: '/assets/header.jpg', sort_order: 3 },
+        { url: '/uploads/avatars/avatar-01.jpg', sort_order: 10 },
+        { url: '/uploads/avatars/avatar-02.jpg', sort_order: 9 },
+        { url: '/uploads/avatars/avatar-03.jpg', sort_order: 8 },
+        { url: '/uploads/avatars/avatar-04.jpg', sort_order: 7 },
+        { url: '/uploads/avatars/avatar-05.jpg', sort_order: 6 },
+        { url: '/uploads/avatars/avatar-06.jpg', sort_order: 5 },
+        { url: '/uploads/avatars/avatar-07.jpg', sort_order: 4 },
+        { url: '/uploads/avatars/avatar-08.jpg', sort_order: 3 },
       ]
     })
     console.log('✅ 头像创建成功: 8 个')
@@ -85,9 +88,9 @@ const seedData = async () => {
     console.log('🚩 创建Banner数据...')
     await prisma.banners.createMany({
       data: [
-        { title: '欢迎来到 Fancheer 个人站', image_url: '/assets/header.jpg', link_url: '/', sort_order: 1, is_visible: true },
-        { title: '博主形象展示', image_url: '/assets/picture-08.jpg', link_url: '/', sort_order: 2, is_visible: true },
-        { title: '音乐与日常', image_url: '/assets/picture-02.jpg', link_url: '/', sort_order: 3, is_visible: true },
+        { title: '欢迎来到 Fancheer 个人站', image_url: '/uploads/banners/banner1.jpg', link_url: '/', sort_order: 1, is_visible: true },
+        { title: '博主形象展示', image_url: '/uploads/banners/banner2.jpg', link_url: '/', sort_order: 2, is_visible: true },
+        { title: '音乐与日常', image_url: '/uploads/banners/banner3.jpg', link_url: '/', sort_order: 3, is_visible: true },
       ]
     })
     console.log('✅ Banner创建成功: 3 个')
@@ -95,9 +98,9 @@ const seedData = async () => {
     console.log('🏆 创建获奖记录数据...')
     await prisma.awards.createMany({
       data: [
-        { title: '2026 年度创作成就', description: '个人创作作品获得年度展示推荐', image_url: '/assets/picture-11.jpg', award_date: new Date('2026-01-15'), sort_order: 1 },
-        { title: '原创音乐入围奖', description: '原创单曲入选平台音乐精选集', image_url: '/assets/picture-09.jpg', award_date: new Date('2026-03-20'), sort_order: 2 },
-        { title: '原创音乐奖', description: '原创单曲获得平台原创音乐奖', image_url: '/assets/picture-16.jpg', award_date: new Date('2026-05-10'), sort_order: 3 },
+        { title: '2026 年度创作成就', description: '个人创作作品获得年度展示推荐', image_url: '/uploads/awards/award1.jpg', award_date: new Date('2026-01-15'), sort_order: 1 },
+        { title: '原创音乐入围奖', description: '原创单曲入选平台音乐精选集', image_url: '/uploads/awards/award2.jpg', award_date: new Date('2026-03-20'), sort_order: 2 },
+        { title: '原创音乐奖', description: '原创单曲获得平台原创音乐奖', image_url: '/uploads/awards/award3.jpg', award_date: new Date('2026-05-10'), sort_order: 3 },
       ]
     })
     console.log('✅ 获奖记录创建成功: 3 个')
@@ -105,9 +108,9 @@ const seedData = async () => {
     console.log('🎵 创建音乐数据...')
     await prisma.songs.createMany({
       data: [
-        { title: '星光闪耀', artist: 'Fancheer', audio_url: '/uploads/songs/song1.mp3', cover_url: '/assets/picture-10.jpg', sort_order: 1 },
-        { title: '梦想起飞', artist: 'Fancheer', audio_url: '/uploads/songs/song2.mp3', cover_url: '/assets/picture-03.jpg', sort_order: 2 },
-        { title: '夏日微风', artist: 'Fancheer', audio_url: '/uploads/songs/song3.mp3', cover_url: '/assets/picture-06.jpg', sort_order: 3 },
+        { title: '星光闪耀', artist: 'Fancheer', audio_url: '/uploads/songs/song1.mp3', cover_url: '/uploads/songs/cover1.jpg', sort_order: 1 },
+        { title: '梦想起飞', artist: 'Fancheer', audio_url: '/uploads/songs/song2.mp3', cover_url: '/uploads/songs/cover2.jpg', sort_order: 2 },
+        { title: '夏日微风', artist: 'Fancheer', audio_url: '/uploads/songs/song3.mp3', cover_url: '/uploads/songs/cover3.jpg', sort_order: 3 },
       ]
     })
     console.log('✅ 音乐创建成功: 3 个')
@@ -115,14 +118,14 @@ const seedData = async () => {
     console.log('📅 创建活动数据...')
     await prisma.activities.createMany({
       data: [
-        { title: '新年特别直播', description: '跨年直播与粉丝互动，回顾一年创作历程', cover_url: '/assets/picture-10.jpg', start_time: new Date('2026-01-01T20:00:00'), end_time: new Date('2026-01-01T23:00:00'), sort_order: 1 },
-        { title: '春季创作企划', description: '以春天为主题的新作品连载与幕后分享', cover_url: '/assets/picture-03.jpg', start_time: new Date('2026-03-01'), end_time: new Date('2026-04-30'), sort_order: 2 },
-        { title: '夏日创作企划', description: '分享夏日主题创作与作品更新', cover_url: '/assets/picture-08.jpg', start_time: new Date('2026-07-01'), end_time: new Date('2026-07-31'), sort_order: 3 },
-        { title: '读者见面会', description: '与访客的线下交流见面活动', cover_url: '/assets/picture-05.jpg', start_time: new Date('2026-08-10'), end_time: new Date('2026-08-15'), sort_order: 4 },
-        { title: '新曲试听会', description: '最新原创单曲抢先试听与创作谈', cover_url: '/assets/picture-06.jpg', start_time: new Date('2026-08-12'), end_time: new Date('2026-08-25'), sort_order: 5 },
-        { title: '周年庆活动', description: '站点一周年庆典，限定内容与互动福利', cover_url: '/assets/header.jpg', start_time: new Date('2026-09-01'), end_time: new Date('2026-09-30'), sort_order: 6 },
-        { title: '秋季巡回直播', description: '连续四周主题直播，每周一个创作话题', cover_url: '/assets/picture-11.jpg', start_time: new Date('2026-10-01'), end_time: new Date('2026-10-28'), sort_order: 7 },
-        { title: '年末感谢祭', description: '年度总结、粉丝感谢与来年计划发布', cover_url: '/assets/picture-16.jpg', start_time: new Date('2026-12-20'), end_time: new Date('2026-12-31'), sort_order: 8 },
+        { title: '新年特别直播', description: '跨年直播与粉丝互动，回顾一年创作历程', cover_url: '/uploads/activities/activity-01.jpg', start_time: new Date('2026-01-01T20:00:00'), end_time: new Date('2026-01-01T23:00:00'), sort_order: 1 },
+        { title: '春季创作企划', description: '以春天为主题的新作品连载与幕后分享', cover_url: '/uploads/activities/activity-02.jpg', start_time: new Date('2026-03-01'), end_time: new Date('2026-04-30'), sort_order: 2 },
+        { title: '夏日创作企划', description: '分享夏日主题创作与作品更新', cover_url: '/uploads/activities/activity-03.jpg', start_time: new Date('2026-07-01'), end_time: new Date('2026-07-31'), sort_order: 3 },
+        { title: '读者见面会', description: '与访客的线下交流见面活动', cover_url: '/uploads/activities/activity-04.jpg', start_time: new Date('2026-08-10'), end_time: new Date('2026-08-15'), sort_order: 4 },
+        { title: '新曲试听会', description: '最新原创单曲抢先试听与创作谈', cover_url: '/uploads/activities/activity-05.jpg', start_time: new Date('2026-08-12'), end_time: new Date('2026-08-25'), sort_order: 5 },
+        { title: '周年庆活动', description: '站点一周年庆典，限定内容与互动福利', cover_url: '/uploads/activities/activity-06.jpg', start_time: new Date('2026-09-01'), end_time: new Date('2026-09-30'), sort_order: 6 },
+        { title: '秋季巡回直播', description: '连续四周主题直播，每周一个创作话题', cover_url: '/uploads/activities/activity-07.jpg', start_time: new Date('2026-10-01'), end_time: new Date('2026-10-28'), sort_order: 7 },
+        { title: '年末感谢祭', description: '年度总结、粉丝感谢与来年计划发布', cover_url: '/uploads/activities/activity-08.jpg', start_time: new Date('2026-12-20'), end_time: new Date('2026-12-31'), sort_order: 8 },
       ]
     })
     console.log('✅ 活动创建成功: 8 个')
@@ -130,34 +133,34 @@ const seedData = async () => {
     console.log('🖼️ 创建图集数据...')
     await prisma.gallery_images.createMany({
       data: [
-        { category: 'anime', url: '/assets/picture-01.jpg', title: '形象 01', sort_order: 15 },
-        { category: 'anime', url: '/assets/picture-02.jpg', title: '形象 02', sort_order: 14 },
-        { category: 'anime', url: '/assets/picture-03.jpg', title: '形象 03', sort_order: 13 },
-        { category: 'anime', url: '/assets/picture-04.jpg', title: '形象 04', sort_order: 12 },
-        { category: 'anime', url: '/assets/picture-05.jpg', title: '形象 05', sort_order: 11 },
-        { category: 'anime', url: '/assets/picture-06.jpg', title: '形象 06', sort_order: 10 },
-        { category: 'anime', url: '/assets/picture-07.jpg', title: '形象 07', sort_order: 9 },
-        { category: 'anime', url: '/assets/picture-08.jpg', title: '形象 08', sort_order: 8 },
-        { category: 'anime', url: '/assets/picture-09.jpg', title: '形象 09', sort_order: 7 },
-        { category: 'anime', url: '/assets/picture-10.jpg', title: '形象 10', sort_order: 6 },
-        { category: 'anime', url: '/assets/picture-11.jpg', title: '形象 11', sort_order: 5 },
-        { category: 'anime', url: '/assets/picture-12.jpg', title: '形象 12', sort_order: 4 },
-        { category: 'anime', url: '/assets/picture-13.jpg', title: '形象 13', sort_order: 3 },
-        { category: 'anime', url: '/assets/picture-16.jpg', title: '形象 16', sort_order: 2 },
-        { category: 'anime', url: '/assets/picture-17.jpg', title: '形象 17', sort_order: 1 },
-        { category: 'real', url: '/assets/header.jpg', title: '日常随拍', sort_order: 6 },
-        { category: 'real', url: '/assets/picture-14.jpg', title: '午后时光', sort_order: 5 },
-        { category: 'real', url: '/assets/picture-15.jpg', title: '街拍记录', sort_order: 4 },
-        { category: 'real', url: '/assets/picture-10.jpg', title: '舞台幕后', sort_order: 3 },
-        { category: 'real', url: '/assets/picture-12.jpg', title: '旅行片段', sort_order: 2 },
-        { category: 'real', url: '/assets/picture-17.jpg', title: '光影瞬间', sort_order: 1 },
+        { category: 'anime', url: '/uploads/gallery/anime-01.jpg', title: '形象 01', sort_order: 15 },
+        { category: 'anime', url: '/uploads/gallery/anime-02.jpg', title: '形象 02', sort_order: 14 },
+        { category: 'anime', url: '/uploads/gallery/anime-03.jpg', title: '形象 03', sort_order: 13 },
+        { category: 'anime', url: '/uploads/gallery/anime-04.jpg', title: '形象 04', sort_order: 12 },
+        { category: 'anime', url: '/uploads/gallery/anime-05.jpg', title: '形象 05', sort_order: 11 },
+        { category: 'anime', url: '/uploads/gallery/anime-06.jpg', title: '形象 06', sort_order: 10 },
+        { category: 'anime', url: '/uploads/gallery/anime-07.jpg', title: '形象 07', sort_order: 9 },
+        { category: 'anime', url: '/uploads/gallery/anime-08.jpg', title: '形象 08', sort_order: 8 },
+        { category: 'anime', url: '/uploads/gallery/anime-09.jpg', title: '形象 09', sort_order: 7 },
+        { category: 'anime', url: '/uploads/gallery/anime-10.jpg', title: '形象 10', sort_order: 6 },
+        { category: 'anime', url: '/uploads/gallery/anime-11.jpg', title: '形象 11', sort_order: 5 },
+        { category: 'anime', url: '/uploads/gallery/anime-12.jpg', title: '形象 12', sort_order: 4 },
+        { category: 'anime', url: '/uploads/gallery/anime-13.jpg', title: '形象 13', sort_order: 3 },
+        { category: 'anime', url: '/uploads/gallery/anime-14.jpg', title: '形象 16', sort_order: 2 },
+        { category: 'anime', url: '/uploads/gallery/anime-15.jpg', title: '形象 17', sort_order: 1 },
+        { category: 'real', url: '/uploads/gallery/real-01.jpg', title: '日常随拍', sort_order: 6 },
+        { category: 'real', url: '/uploads/gallery/real-02.jpg', title: '午后时光', sort_order: 5 },
+        { category: 'real', url: '/uploads/gallery/real-03.jpg', title: '街拍记录', sort_order: 4 },
+        { category: 'real', url: '/uploads/gallery/real-04.jpg', title: '舞台幕后', sort_order: 3 },
+        { category: 'real', url: '/uploads/gallery/real-05.jpg', title: '旅行片段', sort_order: 2 },
+        { category: 'real', url: '/uploads/gallery/real-06.jpg', title: '光影瞬间', sort_order: 1 },
       ]
     })
     console.log('✅ 图集创建成功: 21 个')
 
     console.log('📝 创建博主资料...')
     await prisma.streamer_info.create({
-      data: { name: 'Fancheer', avatar_url: '/assets/picture-01.jpg', tags: '创作,音乐,分享', bio: '大家好，我是 Fancheer，在这里分享我的创作与生活。欢迎常来逛逛～' }
+      data: { name: 'Fancheer', avatar_url: '/uploads/avatars/streamer.jpg', tags: '创作,音乐,分享', bio: '大家好，我是 Fancheer，在这里分享我的创作与生活。欢迎常来逛逛～' }
     })
     console.log('✅ 博主资料创建成功')
 
