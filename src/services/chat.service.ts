@@ -31,12 +31,16 @@ async function resolveCursorCreatedAt(
   return undefined
 }
 
-const checkMessageRateLimit = async (userId: bigint) => {
+const assertMessageRateLimit = async (userId: bigint) => {
   const key = REDIS_KEYS.messageRateLimit(userId)
   const lastMessage = await redis.get(key)
   if (lastMessage) {
     throw new AppError('发送过于频繁，请20秒后再试', 429)
   }
+}
+
+const markMessageRateLimit = async (userId: bigint) => {
+  const key = REDIS_KEYS.messageRateLimit(userId)
   await redis.set(key, '1', 'EX', EXPIRY_TIME.MESSAGE_COOLDOWN)
 }
 
@@ -88,7 +92,7 @@ export const getPublicMessages = async (before?: string, limit: number = 20, use
 }
 
 export const sendMessage = async (userId: bigint, content: string, type: string = 'public') => {
-  await checkMessageRateLimit(userId)
+  await assertMessageRateLimit(userId)
 
   const message = await prisma.messages.create({
     data: {
@@ -98,6 +102,8 @@ export const sendMessage = async (userId: bigint, content: string, type: string 
     },
     select: { id: true, content: true, type: true, created_at: true }
   })
+
+  await markMessageRateLimit(userId)
 
   return {
     id: message.id,
@@ -114,8 +120,6 @@ export const likeMessage = async (userId: bigint, messageId: bigint) => {
   if (existing) {
     return { likeCount: await getLikeCount(messageId) }
   }
-
-  await redis.set(idempotencyKey, '1', 'EX', EXPIRY_TIME.LIKE_IDEMPOTENT)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -142,6 +146,8 @@ export const likeMessage = async (userId: bigint, messageId: bigint) => {
     })
   ])
 
+  await redis.set(idempotencyKey, '1', 'EX', EXPIRY_TIME.LIKE_IDEMPOTENT)
+
   return { likeCount: await getLikeCount(messageId) }
 }
 
@@ -151,8 +157,6 @@ export const unlikeMessage = async (userId: bigint, messageId: bigint) => {
   if (existing) {
     return { likeCount: await getLikeCount(messageId) }
   }
-
-  await redis.set(idempotencyKey, '1', 'EX', EXPIRY_TIME.LIKE_IDEMPOTENT)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -180,6 +184,8 @@ export const unlikeMessage = async (userId: bigint, messageId: bigint) => {
       data: { like_count: { decrement: 1 } }
     })
   ])
+
+  await redis.set(idempotencyKey, '1', 'EX', EXPIRY_TIME.LIKE_IDEMPOTENT)
 
   return { likeCount: await getLikeCount(messageId) }
 }
@@ -310,7 +316,7 @@ export const reportMessage = async (userId: bigint, messageId: bigint, reason: s
 }
 
 export const streamerReply = async (userId: bigint, messageId: bigint, content: string) => {
-  await checkMessageRateLimit(userId)
+  await assertMessageRateLimit(userId)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -350,6 +356,8 @@ export const streamerReply = async (userId: bigint, messageId: bigint, content: 
     }
   })
 
+  await markMessageRateLimit(userId)
+
   return {
     id: reply.id,
     messageId: reply.message_id,
@@ -367,7 +375,7 @@ export const privateReply = async (
   content: string,
   isPublic: boolean = false
 ) => {
-  await checkMessageRateLimit(userId)
+  await assertMessageRateLimit(userId)
 
   const message = await prisma.messages.findUnique({ where: { id: messageId } })
   if (!message) {
@@ -400,6 +408,8 @@ export const privateReply = async (
         : `主播回复消息 ${messageId}`
     }
   })
+
+  await markMessageRateLimit(userId)
 
   return {
     id: reply.id,

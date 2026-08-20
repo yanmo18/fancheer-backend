@@ -24,6 +24,8 @@ export const register = async (req: UserRequest, res: Response) => {
 
   if (!agreement) return res.json(fail('请勾选用户协议', 400))
 
+  if (!captchaId || !captchaText) return res.json(fail('请填写验证码', 400))
+
   const usernameError = validateUsername(username)
   if (usernameError) return res.json(fail(usernameError, 400))
 

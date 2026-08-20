@@ -14,6 +14,15 @@ async function assertBannerLimit(excludeId?: bigint) {
   }
 }
 
+async function assertVisibleBannerLimit(excludeId?: bigint) {
+  const where: { is_visible: true; id?: { not: bigint } } = { is_visible: true }
+  if (excludeId) where.id = { not: excludeId }
+  const count = await prisma.banners.count({ where })
+  if (count >= BANNER.MAX_COUNT) {
+    throw new AppError(`可见 Banner 最多 ${BANNER.MAX_COUNT} 张`, 400)
+  }
+}
+
 export const getBanners = async () => {
   const banners = await prisma.banners.findMany({
     where: { is_visible: true },
@@ -77,6 +86,10 @@ export const createBanner = async ({ title, imageUrl, linkUrl, sortOrder, isVisi
 }, adminId: bigint) => {
   await assertBannerLimit()
 
+  if (isVisible !== false) {
+    await assertVisibleBannerLimit()
+  }
+
   const banner = await prisma.banners.create({
     data: {
       title: title || '',
@@ -111,6 +124,10 @@ export const updateBanner = async (id: bigint, { title, imageUrl, linkUrl, sortO
   const banner = await prisma.banners.findUnique({ where: { id } })
   if (!banner) {
     throw new AppError('Banner不存在', 404)
+  }
+
+  if (isVisible === true && !banner.is_visible) {
+    await assertVisibleBannerLimit(id)
   }
 
   const updateData: Record<string, unknown> = { updated_at: new Date() }

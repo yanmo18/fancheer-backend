@@ -37,6 +37,10 @@ export const register = async ({ username, password, captchaId, captchaText, ava
   captchaText: string
   avatarId?: bigint
 }) => {
+  if (!captchaId || !captchaText?.trim()) {
+    throw new AppError('请填写验证码', 400)
+  }
+
   const storedCaptcha = await redis.get(REDIS_KEYS.captcha(captchaId))
   if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
     throw new AppError('验证码错误', 400)

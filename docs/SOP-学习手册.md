@@ -315,7 +315,7 @@ Client 发送 multipart/form-data
       图片：sharp 压缩 → 写入 uploads/{category}/{uuid}.jpg
       音频：直接写入 uploads/audio/{uuid}.{ext}
   → 返回 { url: "/uploads/..." }
-  → 前端通过 http://localhost:3000/uploads/... 访问
+  → 前端通过 http://localhost:3001/uploads/... 访问（开发环境 Vite 代理）
 ```
 
 限制：
@@ -327,18 +327,18 @@ Client 发送 multipart/form-data
 
 ## §10 动手实验清单
 
-以下实验使用 curl 或 Postman。Base URL：`http://localhost:3000`
+以下实验使用 curl 或 Postman。Base URL：`http://localhost:3001`
 
 ### 实验 1：健康检查
 
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:3001/api/health
 ```
 
 ### 实验 2：获取验证码
 
 ```bash
-curl http://localhost:3000/api/auth/captcha
+curl http://localhost:3001/api/auth/captcha
 ```
 
 记录返回的 `captchaId`，查看 SVG 图片辨认验证码文字。
@@ -346,7 +346,7 @@ curl http://localhost:3000/api/auth/captcha
 ### 实验 3：注册用户
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:3001/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "fan002",
@@ -359,7 +359,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 ### 实验 4：登录获取 Token
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "fan001", "password": "123456"}'
 ```
@@ -369,14 +369,14 @@ curl -X POST http://localhost:3000/api/auth/login \
 ### 实验 5：获取当前用户信息
 
 ```bash
-curl http://localhost:3000/api/auth/me \
+curl http://localhost:3001/api/auth/me \
   -H "Authorization: Bearer 你的token"
 ```
 
 ### 实验 6：发送公开消息
 
 ```bash
-curl -X POST http://localhost:3000/api/messages \
+curl -X POST http://localhost:3001/api/messages \
   -H "Authorization: Bearer 你的token" \
   -H "Content-Type: application/json" \
   -d '{"content": "你好 Fancheer！", "type": "public"}'
@@ -385,7 +385,7 @@ curl -X POST http://localhost:3000/api/messages \
 ### 实验 7：发送私密消息
 
 ```bash
-curl -X POST http://localhost:3000/api/messages \
+curl -X POST http://localhost:3001/api/messages \
   -H "Authorization: Bearer 你的token" \
   -H "Content-Type: application/json" \
   -d '{"content": "博主加油！", "type": "private"}'
@@ -396,7 +396,7 @@ curl -X POST http://localhost:3000/api/messages \
 先用 admin 登录获取 token，然后：
 
 ```bash
-curl -X PUT http://localhost:3000/api/admin/users/3/ban \
+curl -X PUT http://localhost:3001/api/admin/users/3/ban \
   -H "Authorization: Bearer admin的token"
 ```
 
@@ -405,7 +405,7 @@ curl -X PUT http://localhost:3000/api/admin/users/3/ban \
 先用 streamer 登录，获取私密消息 ID 后：
 
 ```bash
-curl -X POST http://localhost:3000/api/messages/消息ID/private-reply \
+curl -X POST http://localhost:3001/api/messages/消息ID/private-reply \
   -H "Authorization: Bearer streamer的token" \
   -H "Content-Type: application/json" \
   -d '{"content": "谢谢你的支持！"}'
@@ -414,7 +414,7 @@ curl -X POST http://localhost:3000/api/messages/消息ID/private-reply \
 ### 实验 10：每日打卡
 
 ```bash
-curl -X POST http://localhost:3000/api/checkin \
+curl -X POST http://localhost:3001/api/checkin \
   -H "Authorization: Bearer fan的token"
 ```
 
@@ -691,7 +691,7 @@ A: Docker 用来**一键启动** MySQL + Redis + 前后端，环境和别人一�
 
 ### Q: Docker 启动后端口和 dev 一样吗？
 
-A: 不完全一样。Compose 默认网站入口是 **http://localhost:8080**（Nginx）；本地 dev 是前端 `:5173`、后端 `:3001`（或 `.env` 里的 `PORT`）。
+A: 不完全一样。Compose 默认网站入口是 **http://localhost:8080**（Nginx）；本地 dev 是前端 `:5174`、后端 `:3001`（或 `.env` 里的 `PORT`）。
 
 ---
 

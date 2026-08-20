@@ -36,8 +36,12 @@ echo ">> Syncing database schema..."
 pnpm exec prisma db push
 
 if [ "$SEED_ON_START" = "true" ]; then
-  echo ">> Seeding database..."
-  pnpm seed
+  if node docker/should-seed.js; then
+    echo ">> Seeding database (empty database)..."
+    pnpm seed
+  else
+    echo ">> Skipping seed (database already initialized)"
+  fi
 fi
 
 echo ">> Starting API server..."

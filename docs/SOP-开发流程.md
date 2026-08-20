@@ -42,7 +42,7 @@ pnpm dev
 浏览器或 curl 访问：
 
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:3001/api/health
 ```
 
 期望返回 `mysql: ok` 和 `redis: ok`。

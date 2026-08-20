@@ -8,7 +8,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| Base URL（开发） | `http://localhost:3000` |
+| Base URL（开发） | `http://localhost:3001` |
 | 协议 | HTTP/HTTPS |
 | 数据格式 | JSON（上传接口除外） |
 | 字符编码 | UTF-8 |
@@ -139,7 +139,7 @@ Query 参数：
 上传后的文件通过以下 URL 直接访问：
 
 ```
-http://localhost:3000/uploads/<category>/<filename>
+http://localhost:3001/uploads/<category>/<filename>
 ```
 
 ## 健康检查

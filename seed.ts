@@ -178,13 +178,45 @@ const seedData = async () => {
     console.log('💬 创建聊天消息数据...')
     await prisma.messages.createMany({
       data: [
-        { sender_id: fan.id, content: '今天更新的作品好棒！', type: 'public', like_count: 10 },
-        { sender_id: fan.id, content: '期待下一期内容～', type: 'public', like_count: 5 },
+        { sender_id: fan.id, content: '今天更新的作品好棒！', type: 'public', like_count: 0 },
+        { sender_id: fan.id, content: '期待下一期内容～', type: 'public', like_count: 0 },
         { sender_id: fan.id, content: '博主你好，想对你说一些心里话...', type: 'private', like_count: 0 },
-        { sender_id: streamer.id, content: '谢谢大家的支持！', type: 'public', like_count: 20 },
+        { sender_id: streamer.id, content: '谢谢大家的支持！', type: 'public', like_count: 0 },
       ]
     })
-    console.log('✅ 聊天消息创建成功: 4 条')
+
+    const publicMessages = await prisma.messages.findMany({
+      where: { type: 'public' },
+      orderBy: { id: 'asc' },
+    })
+    const messageByContent = (content: string) =>
+      publicMessages.find((message) => message.content === content)
+
+    const firstPublic = messageByContent('今天更新的作品好棒！')
+    const secondPublic = messageByContent('期待下一期内容～')
+    const streamerPublic = messageByContent('谢谢大家的支持！')
+
+    const likeRows = [
+      firstPublic && { user_id: admin.id, message_id: firstPublic.id },
+      firstPublic && { user_id: streamer.id, message_id: firstPublic.id },
+      secondPublic && { user_id: streamer.id, message_id: secondPublic.id },
+      streamerPublic && { user_id: fan.id, message_id: streamerPublic.id },
+      streamerPublic && { user_id: admin.id, message_id: streamerPublic.id },
+    ].filter(Boolean) as { user_id: bigint; message_id: bigint }[]
+
+    if (likeRows.length) {
+      await prisma.likes.createMany({ data: likeRows })
+    }
+
+    for (const message of publicMessages) {
+      const count = await prisma.likes.count({ where: { message_id: message.id } })
+      await prisma.messages.update({
+        where: { id: message.id },
+        data: { like_count: count },
+      })
+    }
+
+    console.log(`✅ 聊天消息创建成功: 4 条，点赞 ${likeRows.length} 条`)
 
     console.log('🎉 数据库种子数据初始化完成！')
     console.log('')

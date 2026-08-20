@@ -12,6 +12,9 @@ export interface UploadCopySpec {
 
 export const FRONTEND_ASSETS_DIR = '../fancheer-frontend/public/assets'
 
+/** Docker 等无法访问前端仓库时的本地素材目录 */
+export const SEED_ASSETS_DIR = 'seed-assets'
+
 export const UPLOAD_IMAGE_COPIES: UploadCopySpec[] = [
   // Banner
   { src: 'header.jpg', dest: 'banners/banner1.jpg', legacyDest: 'banners/banner1.png' },
