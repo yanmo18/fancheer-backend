@@ -34,13 +34,15 @@ export const getGallery = async (category?: string) => {
 
 export const getAdminGallery = async (page: number, pageSize: number) => {
   const skip = (page - 1) * pageSize
-  const [list, total] = await Promise.all([
+  const [list, total, anime, real] = await Promise.all([
     prisma.gallery_images.findMany({
       skip,
       take: pageSize,
       orderBy: { sort_order: 'desc' }
     }),
-    prisma.gallery_images.count()
+    prisma.gallery_images.count(),
+    prisma.gallery_images.count({ where: { category: 'anime' } }),
+    prisma.gallery_images.count({ where: { category: 'real' } }),
   ])
 
   return {
@@ -57,7 +59,11 @@ export const getAdminGallery = async (page: number, pageSize: number) => {
       pageSize,
       total,
       totalPages: Math.ceil(total / pageSize)
-    }
+    },
+    stats: {
+      anime,
+      real,
+    },
   }
 }
 
