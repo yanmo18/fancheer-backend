@@ -13,14 +13,14 @@ router.get('/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`
     await redis.ping()
-    return res.json(success({
+    return res.status(200).json(success({
       status: 'ok',
       database: 'connected',
       redis: 'connected',
       time: new Date()
     }))
   } catch {
-    return res.json(fail('服务不健康', 500))
+    return res.status(503).json(fail('服务不健康', 503))
   }
 })
 

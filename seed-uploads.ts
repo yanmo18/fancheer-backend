@@ -29,6 +29,12 @@ const SILENT_MP3 = Buffer.from(
   'base64',
 )
 
+/** 1x1 深灰 JPEG，无素材目录时的兜底占位图 */
+const PLACEHOLDER_JPEG = Buffer.from(
+  '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=',
+  'base64',
+)
+
 function ensureDir(filePath: string) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
 }
@@ -36,13 +42,27 @@ function ensureDir(filePath: string) {
 function copyAsset(assetsDir: string, relativeSrc: string, relativeDest: string) {
   const from = path.join(assetsDir, relativeSrc)
   const to = path.join(UPLOADS_DIR, relativeDest)
+  ensureDir(to)
 
-  if (!fs.existsSync(from)) {
-    throw new Error(`缺少前端素材: ${from}`)
+  if (fs.existsSync(from)) {
+    fs.copyFileSync(from, to)
+    return
   }
 
-  ensureDir(to)
-  fs.copyFileSync(from, to)
+  const fallbackSrc = path.join(assetsDir, 'header.jpg')
+  if (fs.existsSync(fallbackSrc)) {
+    fs.copyFileSync(fallbackSrc, to)
+    console.warn(`⚠️ 素材缺失 ${relativeSrc}，已用 header.jpg 占位 → ${relativeDest}`)
+    return
+  }
+
+  fs.writeFileSync(to, PLACEHOLDER_JPEG)
+  console.warn(`⚠️ 素材缺失 ${relativeSrc}，已写入占位图 → ${relativeDest}`)
+}
+
+function writePlaceholder(destPath: string) {
+  ensureDir(destPath)
+  fs.writeFileSync(destPath, PLACEHOLDER_JPEG)
 }
 
 export function seedUploadFiles() {
@@ -50,14 +70,27 @@ export function seedUploadFiles() {
     return 0
   }
 
+  let copied = 0
   const assetsDir = resolveAssetsDir()
   if (!assetsDir) {
-    throw new Error(
-      '未找到 uploads 素材目录，请确认 fancheer-frontend 与 backend 为同级目录，或提供 backend/seed-assets',
-    )
+    console.warn('⚠️ 未找到 uploads 素材目录，将写入占位图与静音音频')
+    fs.mkdirSync(path.join(UPLOADS_DIR, 'banners'), { recursive: true })
+    for (const item of UPLOAD_IMAGE_COPIES) {
+      writePlaceholder(path.join(UPLOADS_DIR, item.dest))
+      copied += 1
+      if (item.legacyDest) {
+        writePlaceholder(path.join(UPLOADS_DIR, item.legacyDest))
+        copied += 1
+      }
+    }
+    for (const relativeDest of UPLOAD_AUDIO_FILES) {
+      const to = path.join(UPLOADS_DIR, relativeDest)
+      ensureDir(to)
+      fs.writeFileSync(to, SILENT_MP3)
+      copied += 1
+    }
+    return copied
   }
-
-  let copied = 0
 
   for (const item of UPLOAD_IMAGE_COPIES) {
     copyAsset(assetsDir, item.src, item.dest)

@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { deleteLocalUpload } from './upload.service'
 import { loadSensitiveWords } from '../utils/sensitiveWord'
 
 const USER_ROLES = new Set(['fan', 'admin', 'streamer'])
@@ -281,6 +282,7 @@ export const deleteAvatar = async (id: bigint, adminId: bigint) => {
   }
 
   await prisma.avatars.delete({ where: { id } })
+  deleteLocalUpload(avatar.url)
 
   await prisma.admin_logs.create({
     data: {

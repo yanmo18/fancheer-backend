@@ -29,6 +29,8 @@ Authorization: Bearer <token>
 
 所有接口 HTTP 状态码均为 **200**，通过 body 中的 `code` 字段区分成功与失败。
 
+> **例外**：`GET /api/health` 用于基础设施探针，依赖不可用时返回 HTTP **503**，body 仍为 `{ code, msg, data }` 格式。
+
 ### 成功响应
 
 ```json

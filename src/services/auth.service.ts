@@ -49,46 +49,48 @@ export const register = async ({ username, password, captchaId, captchaText, ava
     throw new AppError('注册过于频繁，请60秒后再试', 429)
   }
 
-  if (!captchaId || !captchaText?.trim()) {
-    throw new AppError('请填写验证码', 400)
-  }
-
-  const storedCaptcha = await redis.get(REDIS_KEYS.captcha(captchaId))
-  if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
-    throw new AppError('验证码错误', 400)
-  }
-
-  await redis.del(REDIS_KEYS.captcha(captchaId))
-
-  const existingUser = await prisma.users.findUnique({ where: { username } })
-  if (existingUser) {
-    throw new AppError('用户名已存在', 409)
-  }
-
-  if (avatarId) {
-    const avatar = await prisma.avatars.findUnique({ where: { id: avatarId } })
-    if (!avatar) {
-      throw new AppError('头像不存在', 404)
+  try {
+    if (!captchaId || !captchaText?.trim()) {
+      throw new AppError('请填写验证码', 400)
     }
+
+    const storedCaptcha = await redis.get(REDIS_KEYS.captcha(captchaId))
+    if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
+      throw new AppError('验证码错误', 400)
+    }
+
+    await redis.del(REDIS_KEYS.captcha(captchaId))
+
+    const existingUser = await prisma.users.findUnique({ where: { username } })
+    if (existingUser) {
+      throw new AppError('用户名已存在', 409)
+    }
+
+    if (avatarId) {
+      const avatar = await prisma.avatars.findUnique({ where: { id: avatarId } })
+      if (!avatar) {
+        throw new AppError('头像不存在', 404)
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+
+    const user = await prisma.users.create({
+      data: {
+        username,
+        password_hash: passwordHash,
+        nickname: username,
+        role: 'fan',
+        status: 'active',
+        avatar_id: avatarId ?? null
+      },
+      select: { id: true }
+    })
+
+    return { userId: user.id }
+  } finally {
+    await redis.set(registerKey, '1', 'EX', EXPIRY_TIME.REGISTER_COOLDOWN)
   }
-
-  const passwordHash = await bcrypt.hash(password, 10)
-
-  const user = await prisma.users.create({
-    data: {
-      username,
-      password_hash: passwordHash,
-      nickname: username,
-      role: 'fan',
-      status: 'active',
-      avatar_id: avatarId ?? null
-    },
-    select: { id: true }
-  })
-
-  await redis.set(registerKey, '1', 'EX', EXPIRY_TIME.REGISTER_COOLDOWN)
-
-  return { userId: user.id }
 }
 
 export const getRegisterAvatars = async () => {
