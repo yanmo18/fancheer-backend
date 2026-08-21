@@ -19,6 +19,8 @@ export const EXPIRY_TIME = {
   MESSAGE_COOLDOWN: 20,
   LIKE_IDEMPOTENT: 1,
   LOGIN_COOLDOWN: 60,
+  REGISTER_COOLDOWN: 60,
+  CAPTCHA_COOLDOWN: 2,
 }
 
 export const PAGINATION = {
@@ -40,6 +42,8 @@ export const REDIS_KEYS = {
   likeAdd: (userId: string | bigint, messageId: string | bigint) => `like:add:${userId}:${messageId}`,
   likeRemove: (userId: string | bigint, messageId: string | bigint) => `like:remove:${userId}:${messageId}`,
   loginRateLimit: (username: string) => `rate_limit:login:${username}`,
+  registerRateLimit: (ip: string) => `rate_limit:register:${ip}`,
+  captchaRateLimit: (ip: string) => `rate_limit:captcha:${ip}`,
 }
 
 export const BANNER = {

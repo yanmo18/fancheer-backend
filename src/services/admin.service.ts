@@ -6,12 +6,29 @@ import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
 import { loadSensitiveWords } from '../utils/sensitiveWord'
 
+const USER_ROLES = new Set(['fan', 'admin', 'streamer'])
+const USER_STATUSES = new Set(['active', 'banned'])
+
+function parseUserRole(role?: string) {
+  if (!role) return undefined
+  if (!USER_ROLES.has(role)) throw new AppError('无效的角色筛选', 400)
+  return role
+}
+
+function parseUserStatus(status?: string) {
+  if (!status) return undefined
+  if (!USER_STATUSES.has(status)) throw new AppError('无效的状态筛选', 400)
+  return status
+}
+
 export const getUsers = async (page: number, pageSize: number, role?: string, status?: string, keyword?: string) => {
   const skip = (page - 1) * pageSize
 
   const whereClause: Record<string, unknown> = {}
-  if (role) whereClause.role = role
-  if (status) whereClause.status = status
+  const parsedRole = parseUserRole(role)
+  const parsedStatus = parseUserStatus(status)
+  if (parsedRole) whereClause.role = parsedRole
+  if (parsedStatus) whereClause.status = parsedStatus
   if (keyword) {
     whereClause.OR = [
       { username: { contains: keyword } },

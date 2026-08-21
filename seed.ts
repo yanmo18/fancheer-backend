@@ -9,7 +9,12 @@ const seedData = async () => {
   try {
     const uploadCount = seedUploadFiles()
     console.log(`📁 uploads 种子文件就绪: ${uploadCount} 个`)
+  } catch (uploadError) {
+    console.warn('⚠️ uploads 种子文件未生成，静态图片可能 404。可执行 pnpm seed:assets && pnpm seed:uploads')
+    console.warn(uploadError)
+  }
 
+  try {
     console.log('🗑️ 清空现有数据...')
     await prisma.$transaction([
       prisma.messages.deleteMany(),

@@ -8,6 +8,7 @@ import { success, fail } from '../utils/response'
 import { sanitize } from '../utils/sanitize'
 import { parseId, userIdFromRequest } from '../utils/id'
 import { parsePagination } from '../utils/pagination'
+import { getSensitiveWordError } from '../utils/sensitiveWord'
 import galleryService from '../services/gallery.service'
 
 export const getGallery = async (req: UserRequest, res: Response) => {
@@ -27,11 +28,15 @@ export const createGalleryImage = async (req: UserRequest, res: Response) => {
   if (!imageUrl) return res.json(fail('图片URL不能为空', 400))
   if (!category) return res.json(fail('分类不能为空', 400))
 
+  const safeTitle = sanitize(title)
+  const sensitiveError = getSensitiveWordError(safeTitle)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   const result = await galleryService.createGalleryImage({
     imageUrl,
     category,
     sortOrder,
-    title: sanitize(title)
+    title: safeTitle
   }, userIdFromRequest(req.user?.id))
   return res.json(success(result, '图片创建成功'))
 }
@@ -40,11 +45,15 @@ export const updateGalleryImage = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { imageUrl, category, sortOrder, title } = req.body
 
+  const safeTitle = title !== undefined ? sanitize(title) : undefined
+  const sensitiveError = getSensitiveWordError(safeTitle)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   await galleryService.updateGalleryImage(parseId(id), {
     imageUrl,
     category,
     sortOrder,
-    title: sanitize(title)
+    title: safeTitle
   }, userIdFromRequest(req.user?.id))
   return res.json(success(null, '图片更新成功'))
 }

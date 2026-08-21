@@ -8,5 +8,5 @@ dist/
 word/
 uploads/*
 !uploads/.gitkeep
-uploads/*
-!uploads/.gitkeep
+seed-assets/*
+!seed-assets/.gitkeep

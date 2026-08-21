@@ -28,7 +28,6 @@ dotenv.config()
 import './config/redis'
 
 const app = express()
-const PORT = Number(process.env.PORT) || 3000
 
 app.use(requestLogger)
 
@@ -79,12 +78,5 @@ app.use('/api', uploadRoutes)
 app.use('/api', healthRoutes)
 
 app.use(errorHandler)
-
-import { loadSensitiveWords } from './utils/sensitiveWord'
-
-app.listen(PORT, async () => {
-  await loadSensitiveWords()
-  console.log(`🚀 服务运行在 http://localhost:${PORT}`)
-})
 
 export default app

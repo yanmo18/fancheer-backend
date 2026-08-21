@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Request } from 'express'
 import AppError from '../utils/appError'
 import { UPLOAD } from '../config/constants'
-import { uploadsSubdir } from '../config/paths'
+import { UPLOADS_DIR, uploadsSubdir } from '../config/paths'
 
 type MulterFile = NonNullable<Request['file']>
 
@@ -57,6 +57,30 @@ export const uploadImage = async (file: MulterFile, category?: string) => {
   return { url }
 }
 
+/** 删除本地上传文件（仅处理 /uploads/ 相对路径，忽略外链） */
+export function deleteLocalUpload(url?: string | null) {
+  if (!url?.startsWith('/uploads/')) return
+  const relative = url.slice('/uploads/'.length)
+  if (!relative || relative.includes('..')) return
+
+  const filePath = path.join(UPLOADS_DIR, relative)
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath)
+  }
+}
+
+export function deleteLocalUploads(...urls: Array<string | undefined | null>) {
+  for (const url of urls) {
+    deleteLocalUpload(url)
+  }
+}
+
+/** 更新资源 URL 时清理被替换的本地文件 */
+export function replaceLocalUpload(oldUrl?: string | null, newUrl?: string | null) {
+  if (!oldUrl || oldUrl === newUrl) return
+  deleteLocalUpload(oldUrl)
+}
+
 export const uploadAudio = async (file: MulterFile) => {
   const ext = path.extname(file.originalname).toLowerCase()
 
@@ -89,5 +113,8 @@ export const uploadAudio = async (file: MulterFile) => {
 
 export default {
   uploadImage,
-  uploadAudio
+  uploadAudio,
+  deleteLocalUpload,
+  deleteLocalUploads,
+  replaceLocalUpload,
 }

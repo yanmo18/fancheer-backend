@@ -175,6 +175,7 @@ http://localhost:3001/uploads/<category>/<filename>
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/auth/captcha` | GET | 获取图形验证码 |
+| `/api/auth/avatars` | GET | 注册可选头像列表 |
 | `/api/auth/register` | POST | 用户注册 |
 | `/api/auth/login` | POST | 用户登录 |
 | `/api/auth/logout` | POST | 用户登出（需要登录） |
@@ -187,9 +188,13 @@ http://localhost:3001/uploads/<category>/<filename>
   "username": "fan002",
   "password": "123456",
   "captchaId": "uuid-from-captcha",
-  "captchaText": "abcd"
+  "captchaText": "abcd",
+  "agreement": true,
+  "avatarId": "1"
 }
 ```
+
+`agreement` 必填且为 `true`；`avatarId` 可选。
 
 #### 登录请求体
 
@@ -213,7 +218,8 @@ http://localhost:3001/uploads/<category>/<filename>
       "username": "fan001",
       "nickname": "访客小明",
       "role": "fan",
-      "avatarUrl": null
+      "avatar": "/uploads/avatars/avatar-01.jpg",
+      "avatarId": "1"
     }
   }
 }
@@ -246,6 +252,7 @@ http://localhost:3001/uploads/<category>/<filename>
 | `/api/messages/public` | GET | 获取公开消息列表 |
 | `/api/messages/public-replies` | GET | 获取博主公开回复（全员可见） |
 | `/api/messages/private` | GET | 获取我的私密消息（仅粉丝） |
+| `/api/messages/private/sent` | GET | 粉丝已发送的私密留言及回复状态 |
 | `/api/messages` | POST | 发送消息（公开/私密） |
 | `/api/messages/:id/like` | POST | 点赞消息 |
 | `/api/messages/:id/like` | DELETE | 取消点赞 |

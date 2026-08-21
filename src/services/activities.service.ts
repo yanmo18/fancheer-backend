@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { deleteLocalUpload, replaceLocalUpload } from './upload.service'
 
 export const getActivities = async () => {
   const activities = await prisma.activities.findMany({
@@ -116,6 +117,10 @@ export const updateActivity = async (id: bigint, { title, description, coverUrl,
   if (endTime !== undefined) updateData.end_time = endTime || null
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
+  if (coverUrl !== undefined && coverUrl !== activity.cover_url) {
+    replaceLocalUpload(activity.cover_url, coverUrl)
+  }
+
   await prisma.activities.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
@@ -136,6 +141,7 @@ export const deleteActivity = async (id: bigint, adminId: bigint) => {
   }
 
   await prisma.activities.delete({ where: { id } })
+  deleteLocalUpload(activity.cover_url)
 
   await prisma.admin_logs.create({
     data: {

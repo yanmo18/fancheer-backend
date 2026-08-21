@@ -97,10 +97,13 @@ export const unlikeMessage = async (req: UserRequest, res: Response) => {
 export const reportMessage = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { reason } = req.body
+  const sanitizedReason = sanitize(reason)
+  if (!sanitizedReason.trim()) return res.json(fail('请填写举报原因', 400))
+
   const result = await chatService.reportMessage(
     userIdFromRequest(req.user?.id),
     parseId(id, '消息ID'),
-    sanitize(reason)
+    sanitizedReason
   )
   return res.json(success(result, '举报提交成功，我们会尽快处理'))
 }
@@ -137,7 +140,7 @@ export const privateReply = async (req: UserRequest, res: Response) => {
     userIdFromRequest(req.user?.id),
     parseId(id, '消息ID'),
     sanitizedContent,
-    Boolean(isPublic)
+    isPublic === undefined ? true : Boolean(isPublic)
   )
   return res.json(success(result, isPublic ? '已公开发布回复' : '私密回复成功'))
 }

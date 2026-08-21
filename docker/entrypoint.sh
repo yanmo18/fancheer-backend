@@ -45,4 +45,4 @@ if [ "$SEED_ON_START" = "true" ]; then
 fi
 
 echo ">> Starting API server..."
-exec node dist/app.js
+exec node dist/server.js

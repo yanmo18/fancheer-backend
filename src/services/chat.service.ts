@@ -373,7 +373,7 @@ export const privateReply = async (
   userId: bigint,
   messageId: bigint,
   content: string,
-  isPublic: boolean = false
+  isPublic: boolean = true
 ) => {
   await assertMessageRateLimit(userId)
 

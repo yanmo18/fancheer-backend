@@ -17,3 +17,14 @@ export const checkSensitiveWord = (text: string): { hasSensitive: boolean; match
   }
   return { hasSensitive: false }
 }
+
+/** 校验多段文本，返回 API 错误文案；无敏感词时返回 null */
+export function getSensitiveWordError(...texts: Array<string | undefined | null>): string | null {
+  for (const raw of texts) {
+    const text = raw?.trim()
+    if (!text) continue
+    const { hasSensitive, matchedWord } = checkSensitiveWord(text)
+    if (hasSensitive) return `内容包含敏感词: ${matchedWord}`
+  }
+  return null
+}

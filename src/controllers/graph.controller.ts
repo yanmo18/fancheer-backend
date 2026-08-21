@@ -8,6 +8,7 @@ import { success, fail } from '../utils/response'
 import { sanitize } from '../utils/sanitize'
 import { parseId, userIdFromRequest } from '../utils/id'
 import { parsePagination } from '../utils/pagination'
+import { getSensitiveWordError } from '../utils/sensitiveWord'
 import graphService from '../services/graph.service'
 
 export const getGraph = async (_req: UserRequest, res: Response) => {
@@ -25,10 +26,15 @@ export const createCharacter = async (req: UserRequest, res: Response) => {
   const { name, avatarUrl, bio, isCenter, sortOrder } = req.body
   if (!name) return res.json(fail('人物名称不能为空', 400))
 
+  const safeName = sanitize(name)
+  const safeBio = sanitize(bio)
+  const sensitiveError = getSensitiveWordError(safeName, safeBio)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   const result = await graphService.createCharacter({
-    name: sanitize(name),
+    name: safeName,
     avatarUrl,
-    bio: sanitize(bio),
+    bio: safeBio,
     isCenter,
     sortOrder
   }, userIdFromRequest(req.user?.id))
@@ -39,10 +45,15 @@ export const updateCharacter = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { name, avatarUrl, bio, isCenter, sortOrder } = req.body
 
+  const safeName = name !== undefined ? sanitize(name) : undefined
+  const safeBio = bio !== undefined ? sanitize(bio) : undefined
+  const sensitiveError = getSensitiveWordError(safeName, safeBio)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   await graphService.updateCharacter(parseId(id), {
-    name: sanitize(name),
+    name: safeName,
     avatarUrl,
-    bio: sanitize(bio),
+    bio: safeBio,
     isCenter,
     sortOrder
   }, userIdFromRequest(req.user?.id))
@@ -67,10 +78,14 @@ export const createRelation = async (req: UserRequest, res: Response) => {
   if (!toCharacterId) return res.json(fail('目标人物ID不能为空', 400))
   if (!relationLabel) return res.json(fail('关系类型不能为空', 400))
 
+  const safeLabel = sanitize(relationLabel)
+  const sensitiveError = getSensitiveWordError(safeLabel)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   const result = await graphService.createRelation({
     fromCharacterId: parseId(fromCharacterId, '起始人物ID'),
     toCharacterId: parseId(toCharacterId, '目标人物ID'),
-    relationLabel: sanitize(relationLabel),
+    relationLabel: safeLabel,
     sortOrder
   }, userIdFromRequest(req.user?.id))
   return res.json(success(result, '关系创建成功'))
@@ -80,10 +95,14 @@ export const updateRelation = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { fromCharacterId, toCharacterId, relationLabel, sortOrder } = req.body
 
+  const safeLabel = relationLabel !== undefined ? sanitize(relationLabel) : undefined
+  const sensitiveError = getSensitiveWordError(safeLabel)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   await graphService.updateRelation(parseId(id), {
     fromCharacterId: fromCharacterId ? parseId(fromCharacterId, '起始人物ID') : undefined,
     toCharacterId: toCharacterId ? parseId(toCharacterId, '目标人物ID') : undefined,
-    relationLabel: sanitize(relationLabel),
+    relationLabel: safeLabel,
     sortOrder
   }, userIdFromRequest(req.user?.id))
   return res.json(success(null, '关系更新成功'))

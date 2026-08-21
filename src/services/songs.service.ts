@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { deleteLocalUploads, replaceLocalUpload } from './upload.service'
 
 export const getSongs = async () => {
   const songs = await prisma.songs.findMany({
@@ -108,6 +109,13 @@ export const updateSong = async (id: bigint, { title, artist, audioUrl, coverUrl
   if (coverUrl !== undefined) updateData.cover_url = coverUrl
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
+  if (audioUrl !== undefined && audioUrl !== song.audio_url) {
+    replaceLocalUpload(song.audio_url, audioUrl)
+  }
+  if (coverUrl !== undefined && coverUrl !== song.cover_url) {
+    replaceLocalUpload(song.cover_url, coverUrl)
+  }
+
   await prisma.songs.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
@@ -128,6 +136,7 @@ export const deleteSong = async (id: bigint, adminId: bigint) => {
   }
 
   await prisma.songs.delete({ where: { id } })
+  deleteLocalUploads(song.audio_url, song.cover_url)
 
   await prisma.admin_logs.create({
     data: {

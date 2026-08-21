@@ -4,12 +4,22 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { deleteLocalUpload, replaceLocalUpload } from './upload.service'
+
+const GALLERY_CATEGORIES = new Set(['anime', 'real'])
+
+function parseGalleryCategory(category?: string) {
+  if (!category) return undefined
+  if (!GALLERY_CATEGORIES.has(category)) {
+    throw new AppError('无效的分类，仅支持 anime 或 real', 400)
+  }
+  return category as 'anime' | 'real'
+}
 
 export const getGallery = async (category?: string) => {
   const whereClause: { category?: 'anime' | 'real' } = {}
-  if (category) {
-    whereClause.category = category as 'anime' | 'real'
-  }
+  const parsed = parseGalleryCategory(category)
+  if (parsed) whereClause.category = parsed
 
   const images = await prisma.gallery_images.findMany({
     where: whereClause,
@@ -73,6 +83,8 @@ export const createGalleryImage = async ({ imageUrl, category, sortOrder, title 
   sortOrder?: number
   title?: string
 }, adminId: bigint) => {
+  parseGalleryCategory(category)
+
   const image = await prisma.gallery_images.create({
     data: {
       url: imageUrl,
@@ -109,9 +121,16 @@ export const updateGalleryImage = async (id: bigint, { imageUrl, category, sortO
 
   const updateData: Record<string, unknown> = {}
   if (imageUrl !== undefined) updateData.url = imageUrl
-  if (category !== undefined) updateData.category = category
+  if (category !== undefined) {
+    parseGalleryCategory(category)
+    updateData.category = category
+  }
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
   if (title !== undefined) updateData.title = title
+
+  if (imageUrl !== undefined && imageUrl !== image.url) {
+    replaceLocalUpload(image.url, imageUrl)
+  }
 
   await prisma.gallery_images.update({ where: { id }, data: updateData })
 
@@ -133,6 +152,7 @@ export const deleteGalleryImage = async (id: bigint, adminId: bigint) => {
   }
 
   await prisma.gallery_images.delete({ where: { id } })
+  deleteLocalUpload(image.url)
 
   await prisma.admin_logs.create({
     data: {

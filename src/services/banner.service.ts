@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { deleteLocalUpload, replaceLocalUpload } from './upload.service'
 import { BANNER } from '../config/constants'
 
 async function assertBannerLimit(excludeId?: bigint) {
@@ -137,6 +138,10 @@ export const updateBanner = async (id: bigint, { title, imageUrl, linkUrl, sortO
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
   if (isVisible !== undefined) updateData.is_visible = isVisible
 
+  if (imageUrl !== undefined && imageUrl !== banner.image_url) {
+    replaceLocalUpload(banner.image_url, imageUrl)
+  }
+
   await prisma.banners.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
@@ -157,6 +162,7 @@ export const deleteBanner = async (id: bigint, adminId: bigint) => {
   }
 
   await prisma.banners.delete({ where: { id } })
+  deleteLocalUpload(banner.image_url)
 
   await prisma.admin_logs.create({
     data: {

@@ -3,6 +3,7 @@
  */
 
 import { prisma } from '../lib/prisma'
+import { replaceLocalUpload } from './upload.service'
 
 export const getStreamerInfo = async () => {
   const info = await prisma.streamer_info.findFirst({
@@ -62,6 +63,9 @@ export const updateStreamerInfo = async ({ name, avatarUrl, tags, bio }: {
   let targetId: bigint
 
   if (existing) {
+    if (avatarUrl !== undefined && avatarUrl !== existing.avatar_url) {
+      replaceLocalUpload(existing.avatar_url, avatarUrl)
+    }
     await prisma.streamer_info.update({
       where: { id: existing.id },
       data: updateData

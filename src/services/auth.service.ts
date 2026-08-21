@@ -12,7 +12,12 @@ import crypto from 'crypto'
 import AppError from '../utils/appError'
 import { EXPIRY_TIME, REDIS_KEYS } from '../config/constants'
 
-export const getCaptcha = async () => {
+export const getCaptcha = async (clientIp: string) => {
+  const captchaKey = REDIS_KEYS.captchaRateLimit(clientIp)
+  if (await redis.get(captchaKey)) {
+    throw new AppError('验证码请求过于频繁，请稍后再试', 429)
+  }
+
   const captcha = svgCaptcha.create({
     size: 4,
     ignoreChars: '0oO1ilI',
@@ -23,6 +28,7 @@ export const getCaptcha = async () => {
 
   const captchaId = crypto.randomUUID()
   await redis.set(REDIS_KEYS.captcha(captchaId), captcha.text.toLowerCase(), 'EX', EXPIRY_TIME.CAPTCHA_EXPIRES)
+  await redis.set(captchaKey, '1', 'EX', EXPIRY_TIME.CAPTCHA_COOLDOWN)
 
   return {
     svg: captcha.data,
@@ -30,13 +36,19 @@ export const getCaptcha = async () => {
   }
 }
 
-export const register = async ({ username, password, captchaId, captchaText, avatarId }: {
+export const register = async ({ username, password, captchaId, captchaText, avatarId, clientIp }: {
   username: string
   password: string
   captchaId: string
   captchaText: string
   avatarId?: bigint
+  clientIp: string
 }) => {
+  const registerKey = REDIS_KEYS.registerRateLimit(clientIp)
+  if (await redis.get(registerKey)) {
+    throw new AppError('注册过于频繁，请60秒后再试', 429)
+  }
+
   if (!captchaId || !captchaText?.trim()) {
     throw new AppError('请填写验证码', 400)
   }
@@ -73,6 +85,8 @@ export const register = async ({ username, password, captchaId, captchaText, ava
     },
     select: { id: true }
   })
+
+  await redis.set(registerKey, '1', 'EX', EXPIRY_TIME.REGISTER_COOLDOWN)
 
   return { userId: user.id }
 }

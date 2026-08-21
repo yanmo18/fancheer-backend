@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
+import { deleteLocalUpload, replaceLocalUpload } from './upload.service'
 
 export const getGraph = async () => {
   const [characters, relations] = await Promise.all([
@@ -128,6 +129,10 @@ export const updateCharacter = async (id: bigint, { name, avatarUrl, bio, isCent
   if (isCenter !== undefined) updateData.is_center = isCenter
   if (sortOrder !== undefined) updateData.sort_order = sortOrder
 
+  if (avatarUrl !== undefined && avatarUrl !== character.avatar_url) {
+    replaceLocalUpload(character.avatar_url, avatarUrl)
+  }
+
   await prisma.graph_characters.update({ where: { id }, data: updateData })
 
   await prisma.admin_logs.create({
@@ -157,6 +162,7 @@ export const deleteCharacter = async (id: bigint, adminId: bigint) => {
   })
 
   await prisma.graph_characters.delete({ where: { id } })
+  deleteLocalUpload(character.avatar_url)
 
   await prisma.admin_logs.create({
     data: {

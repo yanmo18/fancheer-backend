@@ -24,6 +24,8 @@ RUN apt-get update \
 COPY package.json pnpm-lock.yaml prisma.config.ts ./
 COPY prisma ./prisma
 COPY seed.ts seed-uploads.ts seed-upload-manifest.ts graph-seed-data.ts ./
+COPY seed-assets ./seed-assets
+COPY scripts ./scripts
 COPY src/lib ./src/lib
 COPY docker ./docker
 COPY --from=build /app/dist ./dist

@@ -7,10 +7,11 @@ dotenv.config()
 
 const dbUrl = new URL(process.env.DATABASE_URL!)
 
-// MySQL 8 默认 caching_sha2_password，本地非 SSL 连接常需此选项，否则会 pool timeout
+// MySQL 8 默认 caching_sha2_password，本地/Docker 非 SSL 连接常需此选项
+const dockerDbHosts = ['localhost', '127.0.0.1', 'mysql']
 const allowPublicKeyRetrieval = dbUrl.searchParams.has('allowPublicKeyRetrieval')
   ? dbUrl.searchParams.get('allowPublicKeyRetrieval') === 'true'
-  : ['localhost', '127.0.0.1'].includes(dbUrl.hostname)
+  : dockerDbHosts.includes(dbUrl.hostname)
 
 const adapter = new PrismaMariaDb({
   host: dbUrl.hostname,

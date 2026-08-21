@@ -8,6 +8,7 @@ import { success, fail } from '../utils/response'
 import { sanitize } from '../utils/sanitize'
 import { parseId, userIdFromRequest } from '../utils/id'
 import { parsePagination } from '../utils/pagination'
+import { getSensitiveWordError } from '../utils/sensitiveWord'
 import bannerService from '../services/banner.service'
 
 export const getBanners = async (_req: UserRequest, res: Response) => {
@@ -25,10 +26,15 @@ export const createBanner = async (req: UserRequest, res: Response) => {
   const { title, imageUrl, linkUrl, sortOrder = 0, isVisible = true } = req.body
   if (!imageUrl) return res.json(fail('图片URL不能为空', 400))
 
+  const safeTitle = sanitize(title)
+  const safeLinkUrl = sanitize(linkUrl)
+  const sensitiveError = getSensitiveWordError(safeTitle, safeLinkUrl)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   const result = await bannerService.createBanner({
-    title: sanitize(title),
+    title: safeTitle,
     imageUrl,
-    linkUrl: sanitize(linkUrl),
+    linkUrl: safeLinkUrl,
     sortOrder,
     isVisible
   }, userIdFromRequest(req.user?.id))
@@ -39,10 +45,15 @@ export const updateBanner = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { title, imageUrl, linkUrl, sortOrder, isVisible } = req.body
 
+  const safeTitle = title !== undefined ? sanitize(title) : undefined
+  const safeLinkUrl = linkUrl !== undefined ? sanitize(linkUrl) : undefined
+  const sensitiveError = getSensitiveWordError(safeTitle, safeLinkUrl)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   await bannerService.updateBanner(parseId(id), {
-    title: sanitize(title),
+    title: safeTitle,
     imageUrl,
-    linkUrl: sanitize(linkUrl),
+    linkUrl: safeLinkUrl,
     sortOrder,
     isVisible
   }, userIdFromRequest(req.user?.id))

@@ -8,9 +8,10 @@ import { success, fail } from '../utils/response'
 import { validateUsername, validatePassword } from '../utils/validate'
 import { parseOptionalId, userIdFromRequest } from '../utils/id'
 import authService from '../services/auth.service'
+import { getClientIp } from '../utils/clientIp'
 
-export const getCaptcha = async (_req: UserRequest, res: Response) => {
-  const result = await authService.getCaptcha()
+export const getCaptcha = async (req: UserRequest, res: Response) => {
+  const result = await authService.getCaptcha(getClientIp(req))
   return res.json(success(result))
 }
 
@@ -37,7 +38,8 @@ export const register = async (req: UserRequest, res: Response) => {
     password,
     captchaId,
     captchaText,
-    avatarId: parseOptionalId(avatarId)
+    avatarId: parseOptionalId(avatarId),
+    clientIp: getClientIp(req),
   })
   return res.json(success(result, '注册成功'))
 }

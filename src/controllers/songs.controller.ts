@@ -8,6 +8,7 @@ import { success, fail } from '../utils/response'
 import { sanitize } from '../utils/sanitize'
 import { parseId, userIdFromRequest } from '../utils/id'
 import { parsePagination } from '../utils/pagination'
+import { getSensitiveWordError } from '../utils/sensitiveWord'
 import songsService from '../services/songs.service'
 
 export const getSongs = async (_req: UserRequest, res: Response) => {
@@ -26,9 +27,14 @@ export const createSong = async (req: UserRequest, res: Response) => {
   if (!title) return res.json(fail('歌曲名称不能为空', 400))
   if (!audioUrl) return res.json(fail('音频URL不能为空', 400))
 
+  const safeTitle = sanitize(title)
+  const safeArtist = sanitize(artist)
+  const sensitiveError = getSensitiveWordError(safeTitle, safeArtist)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   const result = await songsService.createSong({
-    title: sanitize(title),
-    artist: sanitize(artist),
+    title: safeTitle,
+    artist: safeArtist,
     audioUrl,
     coverUrl,
     sortOrder
@@ -40,9 +46,14 @@ export const updateSong = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { title, artist, audioUrl, coverUrl, sortOrder } = req.body
 
+  const safeTitle = title !== undefined ? sanitize(title) : undefined
+  const safeArtist = artist !== undefined ? sanitize(artist) : undefined
+  const sensitiveError = getSensitiveWordError(safeTitle, safeArtist)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   await songsService.updateSong(parseId(id), {
-    title: sanitize(title),
-    artist: sanitize(artist),
+    title: safeTitle,
+    artist: safeArtist,
     audioUrl,
     coverUrl,
     sortOrder

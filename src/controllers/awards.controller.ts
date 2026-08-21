@@ -8,6 +8,7 @@ import { success, fail } from '../utils/response'
 import { sanitize } from '../utils/sanitize'
 import { parseId, userIdFromRequest } from '../utils/id'
 import { parsePagination } from '../utils/pagination'
+import { getSensitiveWordError } from '../utils/sensitiveWord'
 import awardsService from '../services/awards.service'
 
 export const getAwards = async (_req: UserRequest, res: Response) => {
@@ -25,9 +26,14 @@ export const createAward = async (req: UserRequest, res: Response) => {
   const { title, description, imageUrl, awardDate, sortOrder = 0 } = req.body
   if (!title) return res.json(fail('奖项名称不能为空', 400))
 
+  const safeTitle = sanitize(title)
+  const safeDescription = sanitize(description)
+  const sensitiveError = getSensitiveWordError(safeTitle, safeDescription)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   const result = await awardsService.createAward({
-    title: sanitize(title),
-    description: sanitize(description),
+    title: safeTitle,
+    description: safeDescription,
     imageUrl,
     awardDate,
     sortOrder
@@ -39,9 +45,14 @@ export const updateAward = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { title, description, imageUrl, awardDate, sortOrder } = req.body
 
+  const safeTitle = title !== undefined ? sanitize(title) : undefined
+  const safeDescription = description !== undefined ? sanitize(description) : undefined
+  const sensitiveError = getSensitiveWordError(safeTitle, safeDescription)
+  if (sensitiveError) return res.json(fail(sensitiveError, 400))
+
   await awardsService.updateAward(parseId(id), {
-    title: sanitize(title),
-    description: sanitize(description),
+    title: safeTitle,
+    description: safeDescription,
     imageUrl,
     awardDate,
     sortOrder
