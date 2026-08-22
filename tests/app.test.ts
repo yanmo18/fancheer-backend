@@ -34,4 +34,10 @@ describe('app smoke', () => {
     expect(res.body.data.database).toBe('connected')
     expect(res.body.data.redis).toBe('connected')
   })
+
+  it('GET unknown API returns JSON 404', async () => {
+    const res = await request(app).get('/api/no-such-route')
+    expect(res.status).toBe(200)
+    expect(res.body.code).toBe(404)
+  })
 })

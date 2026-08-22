@@ -4,7 +4,7 @@
  * 作用：全局加载环境变量、创建 Express 核心服务实例
  *       挂载全局基础中间件（日志、跨域、JSON解析）
  *       统一挂载所有业务路由、权限中间件、异常中间件
- *       监听端口、启动Web服务
+ *       实际监听端口见 `src/server.ts`
  * 
  * 中间件挂载顺序（固定不可乱）：
  *   1. 请求日志中间件（最先）
@@ -19,6 +19,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import requestLogger from './middlewares/requestLogger.middleware'
 import errorHandler from './middlewares/error.middleware'
+import { fail } from './utils/response'
 import { UPLOADS_DIR } from './config/paths'
 
 dotenv.config()
@@ -29,12 +30,16 @@ import './config/redis'
 
 const app = express()
 
+if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1)
+}
+
 app.use(requestLogger)
 
 const corsOrigin = process.env.CORS_ORIGIN
 app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(s => s.trim()) } : undefined))
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json({ limit: '1mb' }))
+app.use(express.urlencoded({ extended: true, limit: '1mb' }))
 app.use('/uploads', express.static(UPLOADS_DIR))
 
 app.get('/', (_req, res) => {
@@ -76,6 +81,10 @@ app.use('/api', reportsRoutes)
 app.use('/api', adminRoutes)
 app.use('/api', uploadRoutes)
 app.use('/api', healthRoutes)
+
+app.use((_req, res) => {
+  res.status(200).json(fail('接口不存在', 404))
+})
 
 app.use(errorHandler)
 

@@ -105,25 +105,31 @@ export const getRegisterAvatars = async () => {
   }))
 }
 
-export const login = async ({ username, password }: {
+export const login = async ({ username, password, clientIp }: {
   username: string
   password: string
+  clientIp: string
 }) => {
   const loginKey = REDIS_KEYS.loginRateLimit(username)
-  const locked = await redis.get(loginKey)
-  if (locked) {
+  const loginIpKey = REDIS_KEYS.loginIpRateLimit(clientIp)
+  if (await redis.get(loginKey) || await redis.get(loginIpKey)) {
     throw new AppError('登录尝试过于频繁，请60秒后再试', 429)
+  }
+
+  const markLoginFailed = async () => {
+    await redis.set(loginKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
+    await redis.set(loginIpKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
   }
 
   const user = await prisma.users.findUnique({ where: { username } })
   if (!user) {
-    await redis.set(loginKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
+    await markLoginFailed()
     throw new AppError('用户名或密码错误', 400)
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password_hash)
   if (!isPasswordValid) {
-    await redis.set(loginKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
+    await markLoginFailed()
     throw new AppError('用户名或密码错误', 400)
   }
 

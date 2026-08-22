@@ -23,7 +23,7 @@ export const getRegisterAvatars = async (_req: UserRequest, res: Response) => {
 export const register = async (req: UserRequest, res: Response) => {
   const { username, password, captchaId, captchaText, agreement, avatarId } = req.body
 
-  if (!agreement) return res.json(fail('请勾选用户协议', 400))
+  if (agreement !== true) return res.json(fail('请勾选用户协议', 400))
 
   if (!captchaId || !captchaText) return res.json(fail('请填写验证码', 400))
 
@@ -53,7 +53,7 @@ export const login = async (req: UserRequest, res: Response) => {
   const passwordError = validatePassword(password)
   if (passwordError) return res.json(fail(passwordError, 400))
 
-  const result = await authService.login({ username, password })
+  const result = await authService.login({ username, password, clientIp: getClientIp(req) })
   return res.json(success(result, '登录成功'))
 }
 

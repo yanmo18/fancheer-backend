@@ -23,8 +23,8 @@ export function getSensitiveWordError(...texts: Array<string | undefined | null>
   for (const raw of texts) {
     const text = raw?.trim()
     if (!text) continue
-    const { hasSensitive, matchedWord } = checkSensitiveWord(text)
-    if (hasSensitive) return `内容包含敏感词: ${matchedWord}`
+    const { hasSensitive } = checkSensitiveWord(text)
+    if (hasSensitive) return '内容包含敏感词，请修改后重试'
   }
   return null
 }

@@ -42,6 +42,7 @@ export const REDIS_KEYS = {
   likeAdd: (userId: string | bigint, messageId: string | bigint) => `like:add:${userId}:${messageId}`,
   likeRemove: (userId: string | bigint, messageId: string | bigint) => `like:remove:${userId}:${messageId}`,
   loginRateLimit: (username: string) => `rate_limit:login:${username}`,
+  loginIpRateLimit: (ip: string) => `rate_limit:login_ip:${ip}`,
   registerRateLimit: (ip: string) => `rate_limit:register:${ip}`,
   captchaRateLimit: (ip: string) => `rate_limit:captcha:${ip}`,
 }

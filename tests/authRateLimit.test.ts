@@ -102,3 +102,20 @@ describe('authService.getCaptcha rate limit', () => {
     })
   })
 })
+
+describe('authService.login rate limit', () => {
+  beforeEach(() => {
+    redisStore.clear()
+    vi.mocked(prisma.users.findUnique).mockResolvedValue(null)
+  })
+
+  it('blocks login by IP after failed attempt', async () => {
+    await expect(
+      authService.login({ username: 'nobody', password: '123456', clientIp: '10.0.0.9' }),
+    ).rejects.toMatchObject({ code: 400 })
+
+    await expect(
+      authService.login({ username: 'other', password: '123456', clientIp: '10.0.0.9' }),
+    ).rejects.toMatchObject({ code: 429 })
+  })
+})
