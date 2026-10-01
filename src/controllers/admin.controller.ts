@@ -122,3 +122,8 @@ export const updateUserRole = async (req: UserRequest, res: Response) => {
   )
   return res.json(success(result, 'success'))
 }
+
+export const getDashboardStats = async (req: UserRequest, res: Response) => {
+  const result = await adminService.getDashboardStats(req.user?.role || '')
+  return res.json(success(result))
+}

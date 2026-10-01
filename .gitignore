@@ -10,3 +10,6 @@ uploads/*
 !uploads/.gitkeep
 seed-assets/*
 !seed-assets/.gitkeep
+
+tools/ffmpeg/
+

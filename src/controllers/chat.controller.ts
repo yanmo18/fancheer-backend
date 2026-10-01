@@ -5,7 +5,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
-import { validateMessage } from '../utils/validate'
+import { validateMessage, validateReportReason } from '../utils/validate'
 import { sanitize } from '../utils/sanitize'
 import { checkSensitiveWord } from '../utils/sensitiveWord'
 import { parseId, userIdFromRequest } from '../utils/id'
@@ -98,7 +98,8 @@ export const reportMessage = async (req: UserRequest, res: Response) => {
   const { id } = req.params
   const { reason } = req.body
   const sanitizedReason = sanitize(reason)
-  if (!sanitizedReason.trim()) return res.json(fail('请填写举报原因', 400))
+  const reasonError = validateReportReason(sanitizedReason)
+  if (reasonError) return res.json(fail(reasonError, 400))
 
   const result = await chatService.reportMessage(
     userIdFromRequest(req.user?.id),

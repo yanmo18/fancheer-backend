@@ -28,3 +28,8 @@ export const getCheckinCalendar = async (req: UserRequest, res: Response) => {
   )
   return res.json(success(result))
 }
+
+export const getCheckinStats = async (req: UserRequest, res: Response) => {
+  const result = await checkinService.getCheckinStats(userIdFromRequest(req.user?.id))
+  return res.json(success(result))
+}

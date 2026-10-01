@@ -5,7 +5,7 @@
 import { Response } from 'express'
 import { UserRequest } from '../types'
 import { success, fail } from '../utils/response'
-import { validateNickname } from '../utils/validate'
+import { validateNickname, validatePasswordChange } from '../utils/validate'
 import { sanitize } from '../utils/sanitize'
 import { checkSensitiveWord } from '../utils/sensitiveWord'
 import { parseId, userIdFromRequest } from '../utils/id'
@@ -34,6 +34,19 @@ export const updateAvatar = async (req: UserRequest, res: Response) => {
     parseId(avatarId, '头像ID')
   )
   return res.json(success(result, '头像修改成功'))
+}
+
+export const changePassword = async (req: UserRequest, res: Response) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body
+  const error = validatePasswordChange(currentPassword, newPassword, confirmPassword)
+  if (error) return res.json(fail(error, 400))
+
+  await userService.changePassword(
+    userIdFromRequest(req.user?.id),
+    currentPassword,
+    newPassword,
+  )
+  return res.json(success(null, '密码修改成功'))
 }
 
 export const getAvatars = async (_req: UserRequest, res: Response) => {

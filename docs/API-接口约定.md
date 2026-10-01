@@ -133,8 +133,9 @@ Query 参数：
 
 - **权限**：admin / streamer
 - **字段**：`file`（必填）
-- **限制**：最大 50MB，支持 mp3/wav/ogg
-- **返回**：`{ "url": "/uploads/audio/<uuid>.<ext>" }`
+- **限制**：最大 50MB，支持 mp3/wav/ogg/m4a
+- **处理**：码率超过 192kbps 时自动转码为 192kbps MP3（需本机或镜像内可用 `ffmpeg`；不可用时原样保存）
+- **返回**：`{ "url": "/uploads/audio/<uuid>.<ext|mp3>", "transcoded": boolean, "sourceBitrateKbps": number|null }`
 
 ### 静态文件访问
 
@@ -233,7 +234,22 @@ http://localhost:3001/uploads/<category>/<filename>
 |------|------|------|
 | `/api/user/nickname` | PUT | 修改展示昵称（需要登录） |
 | `/api/user/avatar` | PUT | 选择系统头像（需要登录） |
+| `/api/user/password` | PUT | 修改登录密码（需要登录） |
 | `/api/user/avatars` | GET | 获取系统头像池（需要登录） |
+
+#### 修改密码请求体
+
+```json
+{
+  "currentPassword": "123456",
+  "newPassword": "newpass1",
+  "confirmPassword": "newpass1"
+}
+```
+
+- 需携带登录 Token
+- 新密码规则与注册相同：6–20 个字符
+- 当前密码错误时返回 `code: 400`；同一账号 60 秒内不可再次尝试（含改密成功后）
 
 ### 首页展示模块（游客可访问）
 
@@ -280,11 +296,13 @@ http://localhost:3001/uploads/<category>/<filename>
 |------|------|------|
 | `/api/checkin` | POST | 每日打卡 |
 | `/api/checkin/calendar` | GET | 获取打卡日历（`?year=2026&month=8`） |
+| `/api/checkin/stats` | GET | 累计天数、连续天数、今日是否已打卡 |
 
 ### 管理后台模块（需要登录，admin/streamer）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
+| `/api/admin/stats` | GET | 管理概览统计（待处理举报、今日打卡/留言、用户数等） |
 | `/api/admin/users` | GET | 获取用户列表 |
 | `/api/admin/users/:id/ban` | PUT | 封禁用户 |
 | `/api/admin/users/:id/unban` | PUT | 解封用户 |
@@ -317,6 +335,28 @@ http://localhost:3001/uploads/<category>/<filename>
 | `/api/admin/sensitive-words` | GET/POST | 敏感词列表/新增 |
 | `/api/admin/sensitive-words/:id` | DELETE | 删除敏感词 |
 | `/api/admin/logs` | GET | 获取操作日志 |
+
+#### 管理概览统计响应 `GET /api/admin/stats`
+
+```json
+{
+  "pendingReports": 0,
+  "publicMessages": 12,
+  "publicMessagesToday": 2,
+  "privateMessages": 3,
+  "users": 10,
+  "fans": 8,
+  "bannedUsers": 0,
+  "checkinsToday": 1,
+  "banners": 3,
+  "gallery": 21,
+  "songs": 3,
+  "activities": 8,
+  "ongoingActivities": 1
+}
+```
+
+`privateMessages` 仅站主（streamer）返回数字，协管员为 `null`。
 
 ### 上传模块（需要登录，admin/streamer）
 

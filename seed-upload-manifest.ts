@@ -12,6 +12,17 @@ export interface UploadCopySpec {
 
 export const FRONTEND_ASSETS_DIR = '../fancheer-frontend/public/assets'
 
+/** 兼容把 public 简写成 pub 的本地目录 */
+export const FRONTEND_ASSETS_DIR_ALT = '../fancheer-frontend/pub/assets'
+
+/** 按优先级查找前端素材目录（含 pub / public 根目录） */
+export const FRONTEND_ASSETS_CANDIDATES = [
+  FRONTEND_ASSETS_DIR,
+  FRONTEND_ASSETS_DIR_ALT,
+  '../fancheer-frontend/public',
+  '../fancheer-frontend/pub',
+] as const
+
 /** Docker 等无法访问前端仓库时的本地素材目录 */
 export const SEED_ASSETS_DIR = 'seed-assets'
 

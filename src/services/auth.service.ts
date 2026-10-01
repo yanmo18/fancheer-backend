@@ -110,7 +110,8 @@ export const login = async ({ username, password, clientIp }: {
   password: string
   clientIp: string
 }) => {
-  const loginKey = REDIS_KEYS.loginRateLimit(username)
+  const normalizedUsername = username.trim()
+  const loginKey = REDIS_KEYS.loginRateLimit(normalizedUsername)
   const loginIpKey = REDIS_KEYS.loginIpRateLimit(clientIp)
   if (await redis.get(loginKey) || await redis.get(loginIpKey)) {
     throw new AppError('登录尝试过于频繁，请60秒后再试', 429)
@@ -121,7 +122,7 @@ export const login = async ({ username, password, clientIp }: {
     await redis.set(loginIpKey, '1', 'EX', EXPIRY_TIME.LOGIN_COOLDOWN)
   }
 
-  const user = await prisma.users.findUnique({ where: { username } })
+  const user = await prisma.users.findUnique({ where: { username: normalizedUsername } })
   if (!user) {
     await markLoginFailed()
     throw new AppError('用户名或密码错误', 400)

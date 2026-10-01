@@ -4,12 +4,12 @@
 
 import fs from 'fs'
 import path from 'path'
-import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { Request } from 'express'
 import AppError from '../utils/appError'
 import { UPLOAD } from '../config/constants'
 import { UPLOADS_DIR, uploadsSubdir } from '../config/paths'
+import { writeCompressedJpeg } from '../utils/compressImage'
 
 type MulterFile = NonNullable<Request['file']>
 
@@ -45,10 +45,7 @@ export const uploadImage = async (file: MulterFile, category?: string) => {
   const filePath = path.join(uploadDir, newFilename)
 
   try {
-    await sharp(file.buffer)
-      .resize({ width: 1920, withoutEnlargement: true })
-      .jpeg({ quality: 80 })
-      .toFile(filePath)
+    await writeCompressedJpeg(file.buffer, filePath)
   } catch {
     throw new AppError('图片处理失败', 500)
   }
@@ -92,13 +89,56 @@ export const uploadAudio = async (file: MulterFile) => {
     throw new AppError('音频文件大小不能超过50MB', 400)
   }
 
-  const newFilename = `${uuidv4()}${ext}`
   const uploadDir = uploadsSubdir('audio')
-
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true })
   }
 
+  const { probeAudioNeedsTranscode, resolveFfmpegPath, transcodeToMp3192 } = await import(
+    '../utils/transcodeAudio'
+  )
+  const probe = await probeAudioNeedsTranscode(file.buffer)
+  const canTranscode = Boolean(resolveFfmpegPath()) && probe.needsTranscode
+
+  if (canTranscode) {
+    const tempName = `${uuidv4()}${ext}`
+    const tempPath = path.join(uploadDir, `tmp-${tempName}`)
+    const outName = `${uuidv4()}.mp3`
+    const outPath = path.join(uploadDir, outName)
+
+    try {
+      fs.writeFileSync(tempPath, file.buffer)
+      await transcodeToMp3192(tempPath, outPath)
+      return {
+        url: `/uploads/audio/${outName}`,
+        transcoded: true,
+        sourceBitrateKbps: probe.bitrateKbps,
+      }
+    } catch {
+      // 转码失败则回退原文件，避免上传中断
+      try {
+        if (fs.existsSync(outPath)) fs.unlinkSync(outPath)
+      } catch {
+        /* ignore */
+      }
+      const fallbackName = `${uuidv4()}${ext}`
+      const fallbackPath = path.join(uploadDir, fallbackName)
+      fs.writeFileSync(fallbackPath, file.buffer)
+      return {
+        url: `/uploads/audio/${fallbackName}`,
+        transcoded: false,
+        sourceBitrateKbps: probe.bitrateKbps,
+      }
+    } finally {
+      try {
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath)
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const newFilename = `${uuidv4()}${ext}`
   const filePath = path.join(uploadDir, newFilename)
 
   try {
@@ -107,8 +147,11 @@ export const uploadAudio = async (file: MulterFile) => {
     throw new AppError('音频保存失败', 500)
   }
 
-  const url = `/uploads/audio/${newFilename}`
-  return { url }
+  return {
+    url: `/uploads/audio/${newFilename}`,
+    transcoded: false,
+    sourceBitrateKbps: probe.bitrateKbps,
+  }
 }
 
 export default {

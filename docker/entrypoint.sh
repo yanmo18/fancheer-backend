@@ -36,7 +36,7 @@ echo ">> Syncing database schema..."
 pnpm exec prisma db push
 
 if [ "$SEED_ON_START" = "true" ]; then
-  if [ ! -f seed-assets/header.jpg ] && [ ! -d "../fancheer-frontend/public/assets" ]; then
+  if [ ! -f seed-assets/header.jpg ] && [ ! -f ../fancheer-frontend/public/assets/header.jpg ] && [ ! -f ../fancheer-frontend/pub/assets/header.jpg ]; then
     echo ">> Warning: seed-assets is empty; uploads will use placeholder images. Run 'pnpm seed:assets' before docker build for real assets."
   fi
   if node docker/should-seed.js; then

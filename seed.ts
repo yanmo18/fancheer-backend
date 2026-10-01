@@ -7,7 +7,7 @@ const seedData = async () => {
   console.log('🌱 开始初始化数据库种子数据...')
 
   try {
-    const uploadCount = seedUploadFiles()
+    const uploadCount = await seedUploadFiles()
     console.log(`📁 uploads 种子文件就绪: ${uploadCount} 个`)
   } catch (uploadError) {
     console.warn('⚠️ uploads 种子文件未生成，静态图片可能 404。可执行 pnpm seed:assets && pnpm seed:uploads')
@@ -93,9 +93,9 @@ const seedData = async () => {
     console.log('🚩 创建Banner数据...')
     await prisma.banners.createMany({
       data: [
-        { title: '欢迎来到 Fancheer 个人站', image_url: '/uploads/banners/banner1.jpg', link_url: '/', sort_order: 1, is_visible: true },
-        { title: '博主形象展示', image_url: '/uploads/banners/banner2.jpg', link_url: '/', sort_order: 2, is_visible: true },
-        { title: '音乐与日常', image_url: '/uploads/banners/banner3.jpg', link_url: '/', sort_order: 3, is_visible: true },
+        { title: '欢迎来到个人站', image_url: '/uploads/banners/banner1.jpg', link_url: '', sort_order: 1, is_visible: true },
+        { title: '活动日历', image_url: '/uploads/banners/banner2.jpg', link_url: '/activities', sort_order: 2, is_visible: true },
+        { title: '最近单曲发布', image_url: '/uploads/banners/banner3.jpg', link_url: '#home-music', sort_order: 3, is_visible: true },
       ]
     })
     console.log('✅ Banner创建成功: 3 个')
@@ -123,13 +123,13 @@ const seedData = async () => {
     console.log('📅 创建活动数据...')
     await prisma.activities.createMany({
       data: [
-        { title: '新年特别直播', description: '跨年直播与粉丝互动，回顾一年创作历程', cover_url: '/uploads/activities/activity-01.jpg', start_time: new Date('2026-01-01T20:00:00'), end_time: new Date('2026-01-01T23:00:00'), sort_order: 1 },
+        { title: '新年特别企划', description: '跨年创作回顾与访客互动，盘点一年作品', cover_url: '/uploads/activities/activity-01.jpg', start_time: new Date('2026-01-01T20:00:00'), end_time: new Date('2026-01-01T23:00:00'), sort_order: 1 },
         { title: '春季创作企划', description: '以春天为主题的新作品连载与幕后分享', cover_url: '/uploads/activities/activity-02.jpg', start_time: new Date('2026-03-01'), end_time: new Date('2026-04-30'), sort_order: 2 },
         { title: '夏日创作企划', description: '分享夏日主题创作与作品更新', cover_url: '/uploads/activities/activity-03.jpg', start_time: new Date('2026-07-01'), end_time: new Date('2026-07-31'), sort_order: 3 },
         { title: '读者见面会', description: '与访客的线下交流见面活动', cover_url: '/uploads/activities/activity-04.jpg', start_time: new Date('2026-08-10'), end_time: new Date('2026-08-15'), sort_order: 4 },
         { title: '新曲试听会', description: '最新原创单曲抢先试听与创作谈', cover_url: '/uploads/activities/activity-05.jpg', start_time: new Date('2026-08-12'), end_time: new Date('2026-08-25'), sort_order: 5 },
         { title: '周年庆活动', description: '站点一周年庆典，限定内容与互动福利', cover_url: '/uploads/activities/activity-06.jpg', start_time: new Date('2026-09-01'), end_time: new Date('2026-09-30'), sort_order: 6 },
-        { title: '秋季巡回直播', description: '连续四周主题直播，每周一个创作话题', cover_url: '/uploads/activities/activity-07.jpg', start_time: new Date('2026-10-01'), end_time: new Date('2026-10-28'), sort_order: 7 },
+        { title: '秋季创作周', description: '连续四周主题分享，每周一个创作话题', cover_url: '/uploads/activities/activity-07.jpg', start_time: new Date('2026-10-01'), end_time: new Date('2026-10-28'), sort_order: 7 },
         { title: '年末感谢祭', description: '年度总结、粉丝感谢与来年计划发布', cover_url: '/uploads/activities/activity-08.jpg', start_time: new Date('2026-12-20'), end_time: new Date('2026-12-31'), sort_order: 8 },
       ]
     })

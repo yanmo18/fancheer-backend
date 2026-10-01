@@ -8,19 +8,22 @@
  * 
  * 中间件挂载顺序（固定不可乱）：
  *   1. 请求日志中间件（最先）
- *   2. 跨域处理
- *   3. 参数解析（json、urlencoded）
- *   4. 业务路由
- *   5. 全局异常中间件（最后）
+ *   2. 安全头（Helmet）
+ *   3. 跨域处理
+ *   4. 参数解析（json、urlencoded）
+ *   5. 业务路由
+ *   6. 全局异常中间件（最后）
  */
 
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import helmet from 'helmet'
 import requestLogger from './middlewares/requestLogger.middleware'
 import errorHandler from './middlewares/error.middleware'
 import { fail } from './utils/response'
 import { UPLOADS_DIR } from './config/paths'
+import { sniffImageContentType } from './utils/uploadMime'
 
 dotenv.config()
 
@@ -36,11 +39,35 @@ if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
 
 app.use(requestLogger)
 
+const isProd = process.env.NODE_ENV === 'production'
+app.use(
+  helmet({
+    // /uploads 可能被另一域名的前端引用，不能用 same-origin
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
+    hsts: isProd,
+  }),
+)
+
 const corsOrigin = process.env.CORS_ORIGIN
 app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(s => s.trim()) } : undefined))
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: true, limit: '1mb' }))
-app.use('/uploads', express.static(UPLOADS_DIR))
+app.use(
+  '/uploads',
+  express.static(UPLOADS_DIR, {
+    maxAge: '1d',
+    setHeaders(res, filePath) {
+      const type = sniffImageContentType(filePath)
+      if (type) res.setHeader('Content-Type', type)
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
+    },
+  }),
+)
+// 静态文件未命中时返回真正的 404，避免落到下方 JSON「接口不存在」(HTTP 200) 导致 <img> 破图
+app.use('/uploads', (_req, res) => {
+  res.status(404).type('text').send('Not Found')
+})
 
 app.get('/', (_req, res) => {
   res.json({

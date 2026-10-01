@@ -17,6 +17,7 @@
  *   GET  /api/admin/sensitive-words - 获取敏感词列表（需要登录，admin/streamer）
  *   POST /api/admin/sensitive-words - 新增敏感词（需要登录，admin/streamer）
  *   DELETE /api/admin/sensitive-words/:id - 删除敏感词（需要登录，admin/streamer）
+ *   GET  /api/admin/stats          - 管理概览统计（需要登录，admin/streamer）
  *   GET  /api/admin/logs           - 获取操作日志（需要登录，admin/streamer）
  */
 
@@ -37,7 +38,8 @@ import {
   deleteAvatar,
   getSensitiveWords,
   createSensitiveWord,
-  deleteSensitiveWord
+  deleteSensitiveWord,
+  getDashboardStats
 } from '../controllers/admin.controller'
 
 const router = Router()
@@ -59,6 +61,7 @@ router.get('/admin/sensitive-words', authMiddleware, requireRole(['admin', 'stre
 router.post('/admin/sensitive-words', authMiddleware, requireRole(['admin', 'streamer']), createSensitiveWord)
 router.delete('/admin/sensitive-words/:id', authMiddleware, requireRole(['admin', 'streamer']), deleteSensitiveWord)
 
+router.get('/admin/stats', authMiddleware, requireRole(['admin', 'streamer']), getDashboardStats)
 router.get('/admin/logs', authMiddleware, requireRole(['admin', 'streamer']), getLogs)
 
 export default router

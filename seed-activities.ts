@@ -5,15 +5,15 @@ import { seedUploadFiles } from './seed-uploads'
 async function seedActivities() {
   console.log('📅 写入活动日历数据...')
 
-  seedUploadFiles()
+  await seedUploadFiles()
 
   await prisma.activities.deleteMany()
 
   const { count } = await prisma.activities.createMany({
     data: [
       {
-        title: '新年特别直播',
-        description: '跨年直播与粉丝互动，回顾一年创作历程',
+        title: '新年特别企划',
+        description: '跨年创作回顾与访客互动，盘点一年作品',
         cover_url: '/uploads/activities/activity-01.jpg',
         start_time: new Date('2026-01-01T20:00:00'),
         end_time: new Date('2026-01-01T23:00:00'),
@@ -60,8 +60,8 @@ async function seedActivities() {
         sort_order: 6,
       },
       {
-        title: '秋季巡回直播',
-        description: '连续四周主题直播，每周一个创作话题',
+        title: '秋季创作周',
+        description: '连续四周主题分享，每周一个创作话题',
         cover_url: '/uploads/activities/activity-07.jpg',
         start_time: new Date('2026-10-01'),
         end_time: new Date('2026-10-28'),

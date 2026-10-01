@@ -1,9 +1,9 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { FRONTEND_ASSETS_DIR, SEED_ASSETS_DIR } from './seed-upload-manifest'
+import { FRONTEND_ASSETS_CANDIDATES, SEED_ASSETS_DIR } from '../seed-upload-manifest'
 
-const ROOT = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TARGET = path.join(ROOT, SEED_ASSETS_DIR)
 
 function copyDir(from: string, to: string) {
@@ -20,9 +20,12 @@ function copyDir(from: string, to: string) {
 }
 
 function main() {
-  const source = path.resolve(ROOT, FRONTEND_ASSETS_DIR)
-  if (!fs.existsSync(source)) {
-    console.error(`❌ 未找到前端素材目录: ${source}`)
+  const source =
+    FRONTEND_ASSETS_CANDIDATES
+      .map((dir) => path.resolve(ROOT, dir))
+      .find((dir) => fs.existsSync(path.join(dir, 'header.jpg'))) ?? null
+  if (!source) {
+    console.error('❌ 未找到前端素材目录（public/assets 或 pub/assets 下需有 header.jpg）')
     console.error('   请确认 fancheer-frontend 与 backend 为同级目录')
     process.exit(1)
   }

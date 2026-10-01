@@ -5,7 +5,7 @@ import { seedUploadFiles } from './seed-uploads'
 async function seedAvatars() {
   console.log('🖼️ 写入预设头像池...')
 
-  seedUploadFiles()
+  await seedUploadFiles()
 
   await prisma.users.updateMany({ data: { avatar_id: null } })
   await prisma.avatars.deleteMany()

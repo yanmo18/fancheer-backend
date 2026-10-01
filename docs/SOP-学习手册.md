@@ -433,13 +433,13 @@ curl -X POST http://localhost:3001/api/checkin \
 
 ### 推荐练习
 
-尝试新增 `GET /api/checkin/stats`（获取用户累计打卡天数）：
+`GET /api/checkin/stats` 已实现（累计天数、连续天数、今日是否已打卡）：
 
-- [ ] 在 `checkin.service.ts` 添加 `getCheckinStats(userId)` 方法
-- [ ] 在 `checkin.controller.ts` 添加控制器
-- [ ] 在 `checkin.route.ts` 添加路由（需 authMiddleware）
-- [ ] Postman 测试
-- [ ] 更新 API 文档
+- [x] 在 `checkin.service.ts` 添加 `getCheckinStats(userId)` 方法
+- [x] 在 `checkin.controller.ts` 添加控制器
+- [x] 在 `checkin.route.ts` 添加路由（需 authMiddleware）
+- [x] 单测覆盖重复打卡与连续天数
+- [x] 更新 API 文档
 
 ---
 

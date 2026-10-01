@@ -170,7 +170,11 @@ export const deleteViolationMessage = async (reportId: bigint, adminId: bigint) 
 
   await prisma.reports.updateMany({
     where: { message_id: messageId },
-    data: { status: 'resolved', resolved_at: new Date() }
+    data: {
+      status: 'resolved',
+      resolved_at: new Date(),
+      resolution_note: report.resolution_note?.trim() || '已删除违规留言',
+    }
   })
 
   await prisma.admin_logs.create({

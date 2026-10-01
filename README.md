@@ -131,6 +131,7 @@ pnpm docker:up                       # 或 docker compose --env-file .env.docker
 | `REDIS_PASSWORD` | 否 | 空 | Redis 密码 |
 | `REDIS_DB` | 否 | 0 | Redis 数据库索引 |
 | `CORS_ORIGIN` | 否 | 允许所有 | 生产 CORS 白名单，逗号分隔 |
+| `FFMPEG_PATH` | 否 | 自动探测 | 音频转码用 ffmpeg 绝对路径；未设置时依次尝试 `ffmpeg-static`、系统 PATH |
 
 完整说明见 [.env.example](.env.example)。
 
@@ -168,6 +169,9 @@ pnpm docker:up                       # 或 docker compose --env-file .env.docker
 ## 文件上传
 
 - 图片：最大 10MB，自动压缩（质量 80%，最大宽度 1920px）
-- 音频：最大 50MB
+- 音频：最大 50MB；码率超过 192kbps 时自动转码为 192kbps MP3（需系统 `ffmpeg` 或已下载的 `ffmpeg-static` 二进制；不可用时原样保存）
+  - Windows：`winget install Gyan.FFmpeg`，若新终端仍 `where ffmpeg` 失败，在 `.env` 设置 `FFMPEG_PATH` 为 `...\ffmpeg-*-full_build\bin\ffmpeg.exe`（见 `.env.example`）
+  - 校验：在 backend 目录用 Node 调用 `resolveFfmpegPath()`，应返回非 null
 - 权限：admin / streamer
-- 静态访问：`http://localhost:3000/uploads/<category>/<filename>`
+- 静态访问：`http://localhost:3001/uploads/<category>/<filename>`
+- 图集 URL 若指向已删除文件，可运行：`pnpm repair:gallery`

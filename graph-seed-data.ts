@@ -5,7 +5,7 @@ export const GRAPH_CHARACTER_DEFS = [
   { name: 'ZHENG', avatar_url: '/uploads/graph/character-02.jpg', bio: '伙伴 · 同频创作', is_center: false, sort_order: 2 },
   { name: '日常', avatar_url: '/uploads/graph/character-03.jpg', bio: '猫系分身 · 随拍记录', is_center: false, sort_order: 3 },
   { name: '阿洛', avatar_url: '/uploads/graph/character-04.jpg', bio: '视觉设计 · 封面合作', is_center: false, sort_order: 4 },
-  { name: '米娅', avatar_url: '/uploads/graph/character-05.jpg', bio: '直播搭档 · 氛围组', is_center: false, sort_order: 5 },
+  { name: '米娅', avatar_url: '/uploads/graph/character-05.jpg', bio: '创作搭档 · 氛围组', is_center: false, sort_order: 5 },
   { name: '小夜', avatar_url: '/uploads/graph/character-06.jpg', bio: '词曲创作 · 深夜灵感', is_center: false, sort_order: 6 },
   { name: '北辰', avatar_url: '/uploads/graph/character-07.jpg', bio: '编曲同好 · 乐器搭子', is_center: false, sort_order: 7 },
   { name: '柚子', avatar_url: '/uploads/graph/character-08.jpg', bio: '同期好友 · 互相催更', is_center: false, sort_order: 8 },

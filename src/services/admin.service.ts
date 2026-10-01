@@ -6,6 +6,13 @@ import { prisma } from '../lib/prisma'
 import AppError from '../utils/appError'
 import { deleteLocalUpload } from './upload.service'
 import { loadSensitiveWords } from '../utils/sensitiveWord'
+import { TIMEZONE } from '../config/constants'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const USER_ROLES = new Set(['fan', 'admin', 'streamer'])
 const USER_STATUSES = new Set(['active', 'banned'])
@@ -323,13 +330,18 @@ export const getSensitiveWords = async (page: number, pageSize: number) => {
 }
 
 export const createSensitiveWord = async (word: string, adminId: bigint) => {
-  const existing = await prisma.sensitive_words.findUnique({ where: { word } })
+  const normalized = word.trim()
+  if (normalized.length < 2) {
+    throw new AppError('敏感词至少 2 个字符，避免单字误伤', 400)
+  }
+
+  const existing = await prisma.sensitive_words.findUnique({ where: { word: normalized } })
   if (existing) {
     throw new AppError('敏感词已存在', 409)
   }
 
   const sensitiveWord = await prisma.sensitive_words.create({
-    data: { word },
+    data: { word: normalized },
     select: { id: true }
   })
 
@@ -339,7 +351,7 @@ export const createSensitiveWord = async (word: string, adminId: bigint) => {
       action: 'create_sensitive_word',
       target_type: 'sensitive_word',
       target_id: sensitiveWord.id,
-      detail: `新增敏感词: ${word}`
+      detail: `新增敏感词: ${normalized}`
     }
   })
 
@@ -502,6 +514,62 @@ export const updateUserRole = async (targetUserId: bigint, newRole: string, oper
   }
 }
 
+export const getDashboardStats = async (role: string) => {
+  const todayStart = dayjs().tz(TIMEZONE).startOf('day').toDate()
+  const now = new Date()
+
+  const [
+    pendingReports,
+    publicMessages,
+    publicMessagesToday,
+    privateMessages,
+    users,
+    fans,
+    bannedUsers,
+    checkinsToday,
+    banners,
+    gallery,
+    songs,
+    activities,
+    ongoingActivities,
+  ] = await Promise.all([
+    prisma.reports.count({ where: { status: 'pending' } }),
+    prisma.messages.count({ where: { type: 'public' } }),
+    prisma.messages.count({ where: { type: 'public', created_at: { gte: todayStart } } }),
+    prisma.messages.count({ where: { type: 'private' } }),
+    prisma.users.count(),
+    prisma.users.count({ where: { role: 'fan' } }),
+    prisma.users.count({ where: { status: 'banned' } }),
+    prisma.check_ins.count({ where: { check_date: todayStart } }),
+    prisma.banners.count({ where: { is_visible: true } }),
+    prisma.gallery_images.count(),
+    prisma.songs.count(),
+    prisma.activities.count(),
+    prisma.activities.count({
+      where: {
+        start_time: { lte: now },
+        OR: [{ end_time: null }, { end_time: { gte: now } }],
+      },
+    }),
+  ])
+
+  return {
+    pendingReports,
+    publicMessages,
+    publicMessagesToday,
+    privateMessages: role === 'streamer' ? privateMessages : null,
+    users,
+    fans,
+    bannedUsers,
+    checkinsToday,
+    banners,
+    gallery,
+    songs,
+    activities,
+    ongoingActivities,
+  }
+}
+
 export default {
   getUsers,
   banUser,
@@ -516,5 +584,6 @@ export default {
   getSensitiveWords,
   createSensitiveWord,
   deleteSensitiveWord,
-  getLogs
+  getLogs,
+  getDashboardStats
 }
