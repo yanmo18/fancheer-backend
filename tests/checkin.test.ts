@@ -69,9 +69,10 @@ describe('checkin', () => {
   it('returns total days and streak', async () => {
     const today = dayjs().tz('Asia/Shanghai').format('YYYY-MM-DD')
     const yesterday = dayjs().tz('Asia/Shanghai').subtract(1, 'day').format('YYYY-MM-DD')
+    // DATE 字段按 UTC 零点日历日存储/读取
     vi.mocked(prisma.check_ins.findMany).mockResolvedValue([
-      { check_date: new Date(`${today}T00:00:00+08:00`) },
-      { check_date: new Date(`${yesterday}T00:00:00+08:00`) },
+      { check_date: new Date(`${today}T00:00:00.000Z`) },
+      { check_date: new Date(`${yesterday}T00:00:00.000Z`) },
     ] as never)
 
     const stats = await getCheckinStats(userId)
