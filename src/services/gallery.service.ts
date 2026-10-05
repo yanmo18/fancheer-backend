@@ -16,30 +16,44 @@ function parseGalleryCategory(category?: string) {
   return category as 'anime' | 'real'
 }
 
-export const getGallery = async (category?: string) => {
+export const getGallery = async (category?: string, page = 1, pageSize = 20) => {
   const whereClause: { category?: 'anime' | 'real' } = {}
   const parsed = parseGalleryCategory(category)
   if (parsed) whereClause.category = parsed
 
-  const images = await prisma.gallery_images.findMany({
-    where: whereClause,
-    orderBy: { sort_order: 'desc' },
-    select: {
-      id: true,
-      url: true,
-      title: true,
-      category: true,
-      sort_order: true
-    }
-  })
+  const skip = (page - 1) * pageSize
+  const [images, total] = await Promise.all([
+    prisma.gallery_images.findMany({
+      where: whereClause,
+      orderBy: { sort_order: 'desc' },
+      skip,
+      take: pageSize,
+      select: {
+        id: true,
+        url: true,
+        title: true,
+        category: true,
+        sort_order: true
+      }
+    }),
+    prisma.gallery_images.count({ where: whereClause }),
+  ])
 
-  return images.map(img => ({
-    id: img.id,
-    imageUrl: img.url,
-    title: img.title,
-    category: img.category,
-    sortOrder: img.sort_order
-  }))
+  return {
+    list: images.map(img => ({
+      id: img.id,
+      imageUrl: img.url,
+      title: img.title,
+      category: img.category,
+      sortOrder: img.sort_order
+    })),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize) || 0,
+    },
+  }
 }
 
 export const getAdminGallery = async (page: number, pageSize: number) => {

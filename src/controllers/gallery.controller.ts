@@ -13,7 +13,8 @@ import galleryService from '../services/gallery.service'
 
 export const getGallery = async (req: UserRequest, res: Response) => {
   const { category } = req.query
-  const result = await galleryService.getGallery(category as string)
+  const { page, pageSize } = parsePagination(req.query.page, req.query.pageSize)
+  const result = await galleryService.getGallery(category as string, page, pageSize)
   return res.json(success(result))
 }
 

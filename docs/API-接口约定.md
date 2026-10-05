@@ -260,7 +260,7 @@ http://localhost:3001/uploads/<category>/<filename>
 | `/api/awards` | GET | 获取获奖记录列表 |
 | `/api/songs` | GET | 获取音乐作品列表 |
 | `/api/activities` | GET | 获取活动日历列表 |
-| `/api/gallery` | GET | 获取图集列表（`?category=anime` 或 `real`） |
+| `/api/gallery` | GET | 获取图集列表（`?category=anime` 或 `real`，`page`/`pageSize`，每页最多 20） |
 | `/api/graph` | GET | 获取关系图谱 |
 
 ### 聊天室模块（需要登录）
